@@ -1,0 +1,401 @@
+---
+import MdiKeyboardArrowRight from "~icons/mdi/keyboard-arrow-right";
+import MdiGithub from "~icons/mdi/github";
+import MdiHeart from "~icons/mdi/heart";
+import IcSharpEmail from "~icons/ic/sharp-email";
+import MdiContentCopy from "~icons/mdi/content-copy";
+import MdiCheck from "~icons/mdi/check";
+import MobileMenu from "./MobileMenu.astro";
+import { navigationItems, socialLinks } from "../data/navigation";
+import { site } from "../data/site";
+
+const socialIconMap = {
+    github: MdiGithub,
+    sponsor: MdiHeart,
+    email: IcSharpEmail,
+};
+
+type Props = {
+    hideOnScroll?: boolean;
+};
+
+const { hideOnScroll = false } = Astro.props;
+const brandLabel = site.name.toUpperCase();
+---
+
+<header
+    class="site-header fixed left-0 right-0 top-0 z-[110] border-b border-border bg-background tracking-[0.08em] backdrop-blur text-text"
+    data-hide-on-scroll={hideOnScroll ? 'true' : undefined}
+>
+    <div class="header-frame">
+        <div class="flex justify-between h-full">
+            <div class="flex">
+                <a
+                    class="header-brand-link flex h-full items-center border-r border-border px-5 text-lg text-text no-underline transition-colors hover:text-primary focus-visible:text-primary focus-visible:outline-none"
+                    href="/"
+                    aria-label={`${site.name} home`}
+                >
+                    {brandLabel}
+                </a>
+                <a
+                    class="header-link flex items-center border-r border-border px-5 text-lg"
+                    href="/#contact"
+                >
+                    <span class="header-link-content uppercase">
+                        Available for hire
+                    </span>
+                </a>
+            </div>
+
+            <div class="desktop-header-nav h-full items-stretch">
+                <div
+                    class="flex flex-row h-full gap-px bg-border border-x border-border"
+                >
+                    {navigationItems.map((item) => (
+                        <a
+                            class="header-link px-4 sm:px-5"
+                            href={item.href}
+                            target={item.href.startsWith('http') ? '_blank' : undefined}
+                            rel={item.href.startsWith('http') ? 'noreferrer' : undefined}
+                        >
+                            <span class="header-link-content">
+                                <MdiKeyboardArrowRight /> {item.label}
+                            </span>
+                        </a>
+                    ))}
+                </div>
+
+                <div
+                    class="flex flex-row h-full gap-px bg-border"
+                >
+                    {socialLinks.map((item) => {
+                        const Icon = socialIconMap[item.icon];
+
+                        return (
+                            <a
+                                class="header-link header-link-icon w-12 sm:w-16"
+                                href={item.href}
+                                target={item.href.startsWith('mailto:') ? undefined : '_blank'}
+                                rel={item.href.startsWith('mailto:') ? undefined : 'noreferrer'}
+                                aria-label={item.label}
+                            >
+                                <span class="header-link-content header-link-content-icon">
+                                    <Icon class={item.icon === 'sponsor' ? 'sponsor-heart' : undefined} />
+                                </span>
+                            </a>
+                        );
+                    })}
+                </div>
+            </div>
+
+            <MobileMenu />
+        </div>
+    </div>
+
+    <div class="ssh-copy-cursor" data-copy-cursor aria-hidden="true">
+        <span class="ssh-copy-cursor-icon ssh-copy-cursor-icon-copy">
+            <MdiContentCopy />
+        </span>
+        <span class="ssh-copy-cursor-icon ssh-copy-cursor-icon-success">
+            <MdiCheck />
+        </span>
+        <span data-copy-cursor-label>Copy</span>
+    </div>
+</header>
+
+<style>
+    .header-frame {
+        height: 4rem;
+    }
+
+    .site-header {
+        transition: transform 260ms ease-out;
+    }
+
+    .site-header.is-hidden {
+        transform: translateY(-100%);
+    }
+
+    .header-brand-link {
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+    }
+
+    .desktop-header-grid,
+    .desktop-header-nav {
+        display: none;
+    }
+
+    @media (min-width: 800px) {
+        .desktop-header-grid {
+            display: grid;
+        }
+
+        .desktop-header-nav {
+            display: flex;
+        }
+    }
+
+    .ssh-copy-button {
+        color: inherit;
+        cursor: none;
+        background: transparent;
+    }
+
+    .ssh-copy-button:focus-visible {
+        outline: 1px solid var(--color-primary);
+        outline-offset: -1px;
+    }
+
+    .ssh-copy-cursor {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 50;
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.35rem 0.5rem;
+        border: 1px solid var(--color-border);
+        background: var(--color-background);
+        color: var(--color-text);
+        font-size: 0.75rem;
+        line-height: 1;
+        opacity: 0;
+        pointer-events: none;
+        transform: translate3d(-999px, -999px, 0);
+        transition:
+            color 160ms ease-out,
+            border-color 160ms ease-out,
+            opacity 120ms ease-out;
+    }
+
+    .ssh-copy-cursor.is-visible {
+        opacity: 1;
+    }
+
+    .ssh-copy-cursor.is-success {
+        border-color: var(--color-success);
+        color: var(--color-success);
+    }
+
+    .ssh-copy-cursor-icon {
+        display: flex;
+        font-size: 0.95rem;
+    }
+
+    .ssh-copy-cursor-icon-success,
+    .ssh-copy-cursor.is-success .ssh-copy-cursor-icon-copy {
+        display: none;
+    }
+
+    .ssh-copy-cursor.is-success .ssh-copy-cursor-icon-success {
+        display: flex;
+    }
+
+    .header-link {
+        position: relative;
+        display: flex;
+        align-items: center;
+        overflow: hidden;
+        background: var(--color-background);
+        color: inherit;
+        text-decoration: none;
+    }
+
+    .header-link::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        transform: scaleX(0);
+        transform-origin: left;
+        background: var(--color-text);
+        transition: transform 300ms ease-out;
+    }
+
+    .header-link:hover::before {
+        transform: scaleX(1);
+    }
+
+    .header-link-content {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        transition: color 300ms ease-out;
+    }
+
+    .header-link:hover .header-link-content {
+        color: var(--color-background);
+    }
+
+    .header-link-icon {
+        justify-content: center;
+    }
+
+    .header-link-content-icon {
+        font-size: 1.25rem;
+    }
+
+    .sponsor-heart {
+        animation: sponsor-heartbeat 1.6s ease-in-out infinite;
+        color: currentColor;
+        transform-origin: center;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .sponsor-heart {
+            animation: none;
+        }
+    }
+
+    @keyframes sponsor-heartbeat {
+        0%,
+        42%,
+        70%,
+        100% {
+            color: currentColor;
+            transform: scale(1);
+        }
+
+        52% {
+            color: hsl(0 84% 60%);
+            transform: scale(1.22);
+        }
+
+        60% {
+            color: hsl(0 84% 60%);
+            transform: scale(0.96);
+        }
+    }
+</style>
+
+<script>
+    import { createAnimatable } from 'animejs';
+
+    const header = document.querySelector('[data-hide-on-scroll="true"]');
+    const copyButtons = document.querySelectorAll('[data-copy-ssh]');
+    const cursorHint = document.querySelector('[data-copy-cursor]');
+    const cursorLabel = document.querySelector('[data-copy-cursor-label]');
+    const cursorOffset = 14;
+    let successTimeout: number | undefined;
+
+    if (header instanceof HTMLElement) {
+        let lastScrollY = window.scrollY;
+        const scrollThreshold = 12;
+
+        const updateHeaderVisibility = () => {
+            const currentScrollY = Math.max(window.scrollY, 0);
+            const delta = currentScrollY - lastScrollY;
+
+            if (currentScrollY <= 8) {
+                header.classList.remove('is-hidden');
+                lastScrollY = currentScrollY;
+                return;
+            }
+
+            if (Math.abs(delta) < scrollThreshold) {
+                return;
+            }
+
+            header.classList.toggle('is-hidden', delta > 0);
+            lastScrollY = currentScrollY;
+        };
+
+        window.addEventListener('scroll', updateHeaderVisibility, { passive: true });
+        window.addEventListener(
+            'pagehide',
+            () => {
+                window.removeEventListener('scroll', updateHeaderVisibility);
+            },
+            { once: true },
+        );
+    }
+
+    const cursorAnimatable =
+        cursorHint instanceof HTMLElement
+            ? createAnimatable(cursorHint, {
+                  x: 180,
+                  y: 180,
+                  ease: 'out(3)',
+              })
+            : null;
+
+    const resetCopyCursor = () => {
+        window.clearTimeout(successTimeout);
+        cursorHint?.classList.remove('is-success');
+
+        if (cursorLabel) {
+            cursorLabel.textContent = 'Copy';
+        }
+    };
+
+    const showCopyCursor = (event: PointerEvent) => {
+        resetCopyCursor();
+        cursorAnimatable?.x(event.clientX + cursorOffset, 0);
+        cursorAnimatable?.y(event.clientY + cursorOffset, 0);
+        cursorHint?.classList.add('is-visible');
+    };
+
+    const hideCopyCursor = () => {
+        cursorHint?.classList.remove('is-visible');
+        resetCopyCursor();
+    };
+
+    const moveCopyCursor = (event: PointerEvent) => {
+        cursorAnimatable?.x(event.clientX + cursorOffset);
+        cursorAnimatable?.y(event.clientY + cursorOffset);
+    };
+
+    const writeClipboard = async (value: string) => {
+        if (!navigator.clipboard?.writeText) {
+            throw new Error('Clipboard API is unavailable.');
+        }
+
+        await navigator.clipboard.writeText(value);
+    };
+
+    copyButtons.forEach((copyButton) => {
+        if (!(copyButton instanceof HTMLElement)) {
+            return;
+        }
+
+        copyButton.addEventListener('pointerenter', showCopyCursor);
+        copyButton.addEventListener('pointermove', moveCopyCursor);
+        copyButton.addEventListener('pointerleave', hideCopyCursor);
+        copyButton.addEventListener('click', async () => {
+            const value = copyButton.dataset.copyValue;
+
+            if (!value || !cursorHint) {
+                return;
+            }
+
+            try {
+                await writeClipboard(value);
+                cursorHint.classList.add('is-success');
+
+                if (cursorLabel) {
+                    cursorLabel.textContent = 'Copied';
+                }
+
+                window.clearTimeout(successTimeout);
+                successTimeout = window.setTimeout(resetCopyCursor, 1200);
+            } catch {
+                resetCopyCursor();
+            }
+        });
+    });
+
+    if (copyButtons.length) {
+        window.addEventListener(
+            'pagehide',
+            () => {
+                window.clearTimeout(successTimeout);
+                cursorAnimatable?.revert();
+            },
+            { once: true },
+        );
+    }
+</script>

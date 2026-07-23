@@ -1,0 +1,84 @@
+---
+import { footerLinks, navigationItems } from "../data/navigation";
+import { site } from "../data/site";
+
+const year = new Date().getFullYear();
+const isExternalHref = (href: string) => href.startsWith('http');
+const footerNavigationItems = [
+    ...navigationItems,
+    { label: 'Resume', href: 'https://aruh1.dev/resume' },
+    { label: 'RSS', href: site.rssPath },
+] as const;
+---
+
+<footer class="footer border-t border-text bg-text px-6 py-16 text-background sm:px-10 sm:py-20">
+    <div class="footer-content space-y-10">
+        <div class="space-y-4">
+            <h2 class="text-5xl font-bold uppercase tracking-[0.18em] text-background">
+                {site.name}
+            </h2>
+            <p class="max-w-2xl text-lg leading-8 text-background/70">
+                Welcome to my corner of the internet.
+            </p>
+        </div>
+
+        <div class="grid gap-8 border-b border-background/30 pb-10 lg:grid-cols-2">
+            <nav class="flex flex-wrap gap-x-8 gap-y-4" aria-label="Footer navigation">
+                {footerNavigationItems.map((item) => (
+                    <a
+                        class="footer-link scramble-link"
+                        href={item.href}
+                        target={isExternalHref(item.href) ? '_blank' : undefined}
+                        rel={isExternalHref(item.href) ? 'noreferrer' : undefined}
+                    >
+                        <span class="scramble-link-label" data-scramble-text>{item.label}</span>
+                    </a>
+                ))}
+            </nav>
+
+            <nav class="flex flex-wrap gap-x-8 gap-y-4 lg:justify-end" aria-label="Footer links">
+                {footerLinks.map((item) => (
+                    <a
+                        class="footer-link scramble-link"
+                        href={item.href}
+                        target={isExternalHref(item.href) ? '_blank' : undefined}
+                        rel={isExternalHref(item.href) ? 'noreferrer' : undefined}
+                    >
+                        <span class="scramble-link-label" data-scramble-text>{item.label}</span>
+                    </a>
+                ))}
+            </nav>
+        </div>
+
+        <div class="grid gap-3 font-mono text-sm uppercase tracking-[0.14em] text-background/60 sm:grid-cols-2 sm:items-center">
+            <span class="sm:justify-self-start">Built with love and open source</span>
+            <span class="sm:justify-self-end">{year}</span>
+        </div>
+    </div>
+</footer>
+
+<style>
+    .footer-content {
+        width: 100%;
+    }
+
+    .footer-link {
+        color: var(--color-background);
+        font-size: 1rem;
+        font-weight: 700;
+        white-space: nowrap;
+        text-decoration: none;
+        transition:
+            color 180ms ease-out,
+            text-decoration-color 180ms ease-out;
+    }
+
+    .footer-link:hover,
+    .footer-link:focus-visible {
+        color: var(--color-background);
+        text-decoration-color: var(--color-primary);
+        outline: none;
+    }
+
+</style>
+

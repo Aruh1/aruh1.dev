@@ -1,0 +1,443 @@
+---
+import MdiArrowTopRight from '~icons/mdi/arrow-top-right';
+import MdiHeart from '~icons/mdi/heart';
+import Layout from '../layouts/Layout.astro';
+import { site } from '../data/site';
+import { thanks } from '../data/thanks';
+import { absoluteUrl } from '../lib/seo';
+
+const title = `Thanks | ${site.name}`;
+const description =
+    'Supporters, sponsors, and contributors helping Aruh1 keep building open-source software.';
+const thanksJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    name: title,
+    description,
+    url: absoluteUrl('/thanks'),
+    inLanguage: site.language,
+    isPartOf: {
+        '@type': 'WebSite',
+        name: site.name,
+        url: absoluteUrl('/'),
+    },
+};
+const floatingHearts = [
+    { left: '6%', size: '1.25rem', delay: '0s', duration: '11s' },
+    { left: '15%', size: '1.75rem', delay: '1.5s', duration: '13s' },
+    { left: '26%', size: '1rem', delay: '0.8s', duration: '10s' },
+    { left: '38%', size: '1.5rem', delay: '2.8s', duration: '12s' },
+    { left: '51%', size: '1.125rem', delay: '0.3s', duration: '9.5s' },
+    { left: '64%', size: '1.9rem', delay: '3.2s', duration: '14s' },
+    { left: '77%', size: '1.1rem', delay: '1.2s', duration: '10.5s' },
+    { left: '89%', size: '1.55rem', delay: '2.1s', duration: '12.5s' },
+] as const;
+---
+
+<Layout
+    title={title}
+    description={description}
+    canonicalPath="/thanks"
+    image={site.defaultOgImage}
+    imageAlt="Aruh1 thanks page social image"
+    jsonLd={thanksJsonLd}
+>
+    <section class="thanks-hero border-t border-border px-6 py-16 text-text sm:px-10 sm:py-20">
+        <div class="thanks-hero-glow" aria-hidden="true"></div>
+        <div class="thanks-hero-hearts" aria-hidden="true">
+            {floatingHearts.map((heart) => (
+                <span
+                    class="floating-heart"
+                    style={`left:${heart.left};--heart-size:${heart.size};--heart-delay:${heart.delay};--heart-duration:${heart.duration};`}
+                >
+                    <MdiHeart />
+                </span>
+            ))}
+        </div>
+
+        <div class="thanks-shell relative z-10 flex justify-center">
+            <div class="thanks-hero-copy max-w-4xl space-y-6 text-center">
+                <p class="font-mono text-sm uppercase tracking-[0.16em] text-primary">
+                    {thanks.hero.eyebrow}
+                </p>
+                <h1 class="text-5xl font-bold uppercase tracking-[0.12em] text-text sm:text-6xl">
+                    {thanks.hero.titleLines.map((line) => (
+                        <span class="thanks-hero-title-line block">{line}</span>
+                    ))}
+                </h1>
+                <p class="mx-auto max-w-3xl text-lg leading-8 text-text/75">
+                    {thanks.hero.description}
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <section class="border-t border-border px-6 py-20 sm:px-10 sm:py-24" data-reveal-section>
+        <div class="thanks-shell space-y-10">
+            <div>
+                <h2
+                    class="about-reveal about-reveal-heading text-4xl font-bold uppercase tracking-[0.12em] text-text sm:text-5xl"
+                    data-section-reveal
+                >
+                    <span>CONTRIBUTORS</span>
+                </h2>
+            </div>
+
+            <article class="relative overflow-hidden border-y border-border bg-background p-6 sm:p-8">
+                <div class="relative z-10 space-y-6">
+                    <div class="recognition-copy">
+                        <p class="max-w-3xl text-base leading-7 text-text/70">
+                            {thanks.contributors.description}
+                        </p>
+                    </div>
+
+                    <div class="contributors-banner">
+                        <picture>
+                            <source
+                                media="(max-width: 639px)"
+                                srcset={thanks.contributors.image.mobileSrc}
+                            />
+                            <source
+                                media="(max-width: 1023px)"
+                                srcset={thanks.contributors.image.tabletSrc}
+                            />
+                            <source
+                                media="(max-width: 1279px)"
+                                srcset={thanks.contributors.image.laptopSrc}
+                            />
+                            <img
+                                class="contributors-banner-image"
+                                src={thanks.contributors.image.src}
+                                alt={thanks.contributors.image.alt}
+                                loading="lazy"
+                            />
+                        </picture>
+                    </div>
+                </div>
+            </article>
+        </div>
+    </section>
+
+    <section class="border-t border-border px-6 py-20 sm:px-10 sm:py-24" data-reveal-section>
+        <div class="thanks-shell">
+            <div class="space-y-10">
+                <div class="space-y-4">
+                    <h2
+                        class="about-reveal about-reveal-heading text-4xl font-bold uppercase tracking-[0.12em] text-text sm:text-5xl"
+                        data-section-reveal
+                    >
+                        <span>Back the next build.</span>
+                    </h2>
+                    <p class="text-lg leading-8 text-text/72">
+                        If a tool saved you time, an article changed how you think, or you want to help push the next idea
+                        into reality, this is where support turns into more shipping.
+                    </p>
+                </div>
+
+                <div class="grid gap-px border-y border-border bg-border lg:grid-cols-2">
+                    {thanks.donationOptions.map((option) => (
+                        <a
+                            class="support-option group relative isolate overflow-hidden bg-background p-6 text-text no-underline transition-colors focus-visible:outline-none sm:p-8"
+                            href={option.href}
+                            target={option.href.startsWith('mailto:') ? undefined : '_blank'}
+                            rel={option.href.startsWith('mailto:') ? undefined : 'noreferrer'}
+                        >
+                            <span class="support-option-mark" aria-hidden="true">
+                                <MdiHeart />
+                            </span>
+
+                            <div class="relative z-10 flex min-h-full flex-col justify-between gap-8">
+                                <div class="space-y-5">
+                                    <div class="font-mono text-sm uppercase tracking-[0.16em] text-primary transition-colors group-hover:text-background group-focus-visible:text-background">
+                                        {option.label}
+                                    </div>
+                                    <h3 class="text-3xl font-bold uppercase leading-tight text-current sm:text-4xl">
+                                        {option.title}
+                                    </h3>
+                                    {option.description && (
+                                        <p class="text-base leading-7 text-text/70 transition-colors group-hover:text-background/72 group-focus-visible:text-background/72">
+                                            {option.description}
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div class="inline-flex w-fit items-center gap-2 border border-border px-3 py-2 font-mono text-sm uppercase tracking-[0.14em] text-primary transition-colors group-hover:border-background group-hover:text-background group-focus-visible:border-background group-focus-visible:text-background">
+                                    <span>{option.action}</span>
+                                    <MdiArrowTopRight class="text-base" aria-hidden="true" />
+                                </div>
+                            </div>
+                        </a>
+                    ))}
+                </div>
+
+                <section class="border border-border bg-background p-5 sm:p-6">
+                    <div class="space-y-2">
+                        <h3 class="font-mono text-sm uppercase tracking-[0.16em] text-primary">
+                            Add your support
+                        </h3>
+                        <p class="text-sm leading-7 text-text/70 sm:text-base">
+                            {thanks.sponsorNote.text}{' '}
+                            <a class="brand-link" href={thanks.sponsorNote.href}>
+                                {thanks.sponsorNote.emailLabel}
+                            </a>
+                            .
+                        </p>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </section>
+</Layout>
+
+<style>
+    .thanks-shell {
+        width: min(100%, 72rem);
+        margin: 0 auto;
+    }
+
+    .thanks-hero {
+        min-height: calc(100vh - 4rem);
+        display: flex;
+        align-items: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .thanks-hero-copy {
+        position: relative;
+    }
+
+    .thanks-hero-glow {
+        position: absolute;
+        inset: 0;
+        background:
+            radial-gradient(circle at 50% 52%, color-mix(in srgb, var(--color-primary) 18%, transparent), transparent 24rem),
+            radial-gradient(circle at 50% 85%, color-mix(in srgb, var(--color-primary) 10%, transparent), transparent 30rem);
+        pointer-events: none;
+    }
+
+    .thanks-hero-hearts {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        pointer-events: none;
+    }
+
+    .floating-heart {
+        position: absolute;
+        bottom: -3rem;
+        color: color-mix(in srgb, var(--color-primary) 78%, white);
+        font-size: var(--heart-size);
+        line-height: 1;
+        opacity: 0;
+        filter: drop-shadow(0 0 1rem color-mix(in srgb, var(--color-primary) 28%, transparent));
+        animation: float-heart-up var(--heart-duration) linear infinite;
+        animation-delay: var(--heart-delay);
+    }
+
+    .sponsor-banner-image,
+    .special-thanks-banner-image {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .special-thanks-banner {
+        width: min(100%, 20rem);
+        overflow: hidden;
+        background: var(--color-background);
+    }
+
+    .contributors-banner {
+        overflow: hidden;
+        background: var(--color-background);
+    }
+
+    .contributors-banner-image {
+        display: block;
+        width: 100%;
+        height: auto;
+    }
+
+    .recognition-row {
+        transition:
+            background 180ms ease-out,
+            border-color 180ms ease-out;
+    }
+
+    .recognition-row:hover,
+    .recognition-row:focus-within {
+        background:
+            radial-gradient(circle at top left, color-mix(in srgb, var(--color-primary) 18%, transparent), transparent 24rem),
+            var(--color-background);
+    }
+
+    .brand-link {
+        color: inherit;
+        text-decoration: underline;
+        text-decoration-color: var(--color-border);
+        text-underline-offset: 0.3em;
+        transition:
+            color 180ms ease-out,
+            text-decoration-color 180ms ease-out;
+    }
+
+    .brand-link:hover,
+    .brand-link:focus-visible {
+        color: var(--color-primary);
+        text-decoration-color: var(--color-primary);
+        outline: none;
+    }
+
+    .brand-banner-link {
+        display: block;
+        transition:
+            opacity 180ms ease-out;
+    }
+
+    .brand-banner-link:hover,
+    .brand-banner-link:focus-visible {
+        opacity: 0.92;
+        outline: none;
+    }
+
+    .about-reveal {
+        position: relative;
+        display: block;
+        overflow: hidden;
+        color: var(--color-text);
+        transition: color 300ms ease-out var(--about-reveal-delay, 0ms);
+    }
+
+    .about-reveal::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        transform: scaleX(0);
+        transform-origin: left;
+        background: var(--color-text);
+        transition: transform 520ms ease-out var(--about-reveal-delay, 0ms);
+    }
+
+    .about-reveal > span {
+        position: relative;
+        z-index: 1;
+    }
+
+    .about-reveal-heading {
+        width: fit-content;
+        padding: 0.08em 0.14em;
+        margin-inline: -0.14em;
+    }
+
+    .about-reveal.is-visible {
+        color: var(--color-background);
+    }
+
+    .about-reveal.is-visible::before {
+        transform: scaleX(1);
+    }
+
+    .support-option:hover,
+    .support-option:focus-visible {
+        background: var(--color-text);
+        color: var(--color-background);
+    }
+
+    .support-option-mark {
+        position: absolute;
+        right: 1.5rem;
+        bottom: -1rem;
+        z-index: 0;
+        color: var(--color-background);
+        font-size: 10rem;
+        line-height: 1;
+        opacity: 0;
+        pointer-events: none;
+        transform: translateX(1rem) rotate(-8deg);
+        transition:
+            opacity 320ms ease-out,
+            transform 320ms ease-out;
+        mask-image: linear-gradient(90deg, transparent 0%, black 100%);
+        -webkit-mask-image: linear-gradient(90deg, transparent 0%, black 100%);
+    }
+
+    .support-option:hover .support-option-mark,
+    .support-option:focus-visible .support-option-mark {
+        opacity: 0.16;
+        transform: translateX(0) rotate(-8deg);
+    }
+
+    @keyframes float-heart-up {
+        0% {
+            opacity: 0;
+            transform: translate3d(0, 0, 0) scale(0.8) rotate(-10deg);
+        }
+
+        10% {
+            opacity: 0.35;
+        }
+
+        50% {
+            opacity: 0.6;
+            transform: translate3d(1rem, -45vh, 0) scale(1) rotate(4deg);
+        }
+
+        100% {
+            opacity: 0;
+            transform: translate3d(-0.75rem, -90vh, 0) scale(1.08) rotate(10deg);
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .floating-heart {
+            animation: none;
+            opacity: 0.16;
+        }
+
+        .about-reveal,
+        .about-reveal::before {
+            transition-duration: 0ms;
+            transition-delay: 0ms;
+        }
+    }
+</style>
+
+<script>
+    const revealSections = document.querySelectorAll('[data-reveal-section]');
+
+    revealSections.forEach((section) => {
+        const revealItems = section.querySelectorAll('[data-section-reveal]');
+
+        if (!(section instanceof HTMLElement) || !revealItems.length) {
+            return;
+        }
+
+        const showRevealItems = () => {
+            revealItems.forEach((item) => {
+                item.classList.add('is-visible');
+            });
+        };
+
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            showRevealItems();
+        } else if ('IntersectionObserver' in window) {
+            const revealObserver = new IntersectionObserver(
+                (entries) => {
+                    if (entries.some((entry) => entry.isIntersecting)) {
+                        showRevealItems();
+                        revealObserver.disconnect();
+                    }
+                },
+                {
+                    threshold: 0.35,
+                },
+            );
+
+            revealObserver.observe(section);
+        } else {
+            showRevealItems();
+        }
+    });
+</script>

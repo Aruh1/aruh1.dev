@@ -1,0 +1,40 @@
+{
+    "$schema": "./node_modules/oxlint/configuration_schema.json",
+    "plugins": ["react", "jsx-a11y", "typescript", "unicorn", "import"],
+    "categories": {
+        "correctness": "error"
+    },
+    "rules": {
+        "no-unreachable": "error",
+        "no-unused-labels": "error",
+        "no-eval": "error",
+        "react/no-children-prop": "error",
+        "react/exhaustive-deps": "warn",
+        "react/rules-of-hooks": "error",
+        "react/jsx-key": "error",
+        "react/jsx-no-comment-textnodes": "error",
+        "react/jsx-no-duplicate-props": "error",
+        "react/no-danger-with-children": "error",
+        "jsx-a11y/aria-unsupported-elements": "warn",
+        "jsx-a11y/alt-text": "warn",
+        "jsx-a11y/role-has-required-aria-props": "off",
+        "jsx-a11y/role-supports-aria-props": "warn",
+        "jsx-a11y/aria-props": "warn",
+        "jsx-a11y/aria-proptypes": "warn",
+        "jsx-a11y/label-has-associated-control": "off",
+        "jsx-a11y/no-noninteractive-element-interactions": "off",
+        "jsx-a11y/click-events-have-key-events": "off",
+        "jsx-a11y/no-static-element-interactions": "off",
+        "jsx-a11y/prefer-tag-over-role": "off",
+        "jsx-a11y/no-autofocus": "off"
+    },
+    "ignorePatterns": ["node_modules/", "dist/", ".astro/", "storage/", "backups/", "public/"],
+    "overrides": [
+        {
+            "files": ["src/components/ui/**/*.{ts,tsx}"],
+            "rules": {
+                "react/only-export-components": "off"
+            }
+        }
+    ]
+}

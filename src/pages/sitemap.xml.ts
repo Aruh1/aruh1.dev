@@ -1,0 +1,60 @@
+import type { APIRoute } from "astro"
+import { getPublishedBlogPosts } from "../data/blog"
+import { absoluteUrl } from "../lib/seo"
+
+export const prerender = true
+
+const xmlEscapeMap: Record<string, string> = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&apos;"
+}
+
+const escapeXml = (value: string) => value.replace(/[&<>"']/g, char => xmlEscapeMap[char])
+
+type SitemapEntry = {
+    url: string
+    lastmod?: string
+}
+
+const formatSitemapDate = (date: Date) => date.toISOString().slice(0, 10)
+
+export const GET: APIRoute = async () => {
+    const posts = await getPublishedBlogPosts()
+    const entries: SitemapEntry[] = [
+        { url: absoluteUrl("/") },
+        { url: absoluteUrl("/blog/") },
+        { url: absoluteUrl("/thanks") },
+        ...posts
+            .sort((a, b) => a.data.publish_date.getTime() - b.data.publish_date.getTime())
+            .map(post => ({
+                url: absoluteUrl(`/blog/${post.data.post_slug}/`),
+                lastmod: formatSitemapDate(post.data.updated_date ?? post.data.publish_date)
+            }))
+    ]
+
+    const body = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+        ...entries.map(({ url, lastmod }) =>
+            [
+                "  <url>",
+                `    <loc>${escapeXml(url)}</loc>`,
+                lastmod ? `    <lastmod>${escapeXml(lastmod)}</lastmod>` : undefined,
+                "  </url>"
+            ]
+                .filter(Boolean)
+                .join("\n")
+        ),
+        "</urlset>",
+        ""
+    ].join("\n")
+
+    return new Response(body, {
+        headers: {
+            "Content-Type": "application/xml; charset=utf-8"
+        }
+    })
+}

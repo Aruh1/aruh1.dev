@@ -1,0 +1,54 @@
+<div class="boids-background" aria-hidden="true" data-boids-root></div>
+
+<script>
+    import { mountBoids } from '../scripts/boids';
+
+    const root = document.querySelector('[data-boids-root]');
+
+    if (root instanceof HTMLElement) {
+        const navigatorWithConnection = navigator as Navigator & {
+            connection?: {
+                saveData?: boolean;
+            };
+        };
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const saveDataEnabled = navigatorWithConnection.connection?.saveData === true;
+
+        if (!prefersReducedMotion && !saveDataEnabled) {
+            const start = () => {
+                const cleanup = mountBoids(root);
+
+                window.addEventListener(
+                    'pagehide',
+                    () => {
+                        cleanup();
+                    },
+                    { once: true },
+                );
+            };
+
+            if ('requestIdleCallback' in window) {
+                window.requestIdleCallback(start, { timeout: 1500 });
+            } else {
+                globalThis.setTimeout(start, 800);
+            }
+        }
+    }
+</script>
+
+<style>
+    .boids-background {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        pointer-events: none;
+    }
+
+    .boids-background :global(canvas) {
+        display: block;
+        width: 100%;
+        height: 100%;
+        opacity: 0.7;
+        mix-blend-mode: screen;
+    }
+</style>

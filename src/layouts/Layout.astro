@@ -1,0 +1,142 @@
+---
+import Footer from "../components/Footer.astro";
+import Header from "../components/Header.astro";
+import LinkEffects from "../components/LinkEffects.astro";
+import { site } from "../data/site";
+import {
+    absoluteAssetUrl,
+    absoluteUrl,
+    pageDescription,
+    pageTitle,
+    safeJsonLd,
+} from "../lib/seo";
+import "@fontsource/space-grotesk/latin-300.css";
+import "@fontsource/space-grotesk/latin-400.css";
+import "@fontsource/space-grotesk/latin-500.css";
+import "@fontsource/space-grotesk/latin-600.css";
+import "@fontsource/space-grotesk/latin-700.css";
+import "@fontsource/inter/latin-400.css";
+import "@fontsource/inter/latin-500.css";
+import "@fontsource/inter/latin-600.css";
+import "@fontsource/inter/latin-700.css";
+import "../global.css";
+
+type Props = {
+    title?: string;
+    description?: string;
+    lang?: string;
+    canonicalPath?: string;
+    image?: string;
+    imageAlt?: string;
+    robots?: string;
+    type?: 'website' | 'article';
+    publishedTime?: string;
+    modifiedTime?: string;
+    authors?: string[];
+    tags?: string[];
+    jsonLd?: unknown | unknown[];
+};
+
+const {
+    title = site.title,
+    description,
+    lang = site.language,
+    canonicalPath = Astro.url.pathname,
+    image = site.defaultOgImage,
+    imageAlt = `${site.name} social image`,
+    robots = 'index, follow',
+    type = 'website',
+    publishedTime,
+    modifiedTime,
+    authors = [],
+    tags = [],
+    jsonLd,
+} = Astro.props;
+const resolvedTitle = pageTitle(title);
+const resolvedDescription = pageDescription(description);
+const canonicalUrl = absoluteUrl(canonicalPath);
+const imageUrl = absoluteAssetUrl(image);
+const rssUrl = absoluteAssetUrl(site.rssPath);
+const jsonLdItems = Array.isArray(jsonLd) ? jsonLd : jsonLd ? [jsonLd] : [];
+const hideHeaderOnScroll = Astro.url.pathname.startsWith('/blog');
+---
+
+<!doctype html>
+<html lang={lang}>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width" />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <link rel="icon" sizes="any" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+        <link rel="manifest" href="/site.webmanifest" />
+        <link rel="canonical" href={canonicalUrl} />
+        <link rel="sitemap" href={site.sitemapPath} />
+        <link
+            rel="alternate"
+            type="application/rss+xml"
+            title={`${site.name} RSS`}
+            href={rssUrl}
+        />
+        <meta name="description" content={resolvedDescription} />
+        <meta name="robots" content={robots} />
+        <meta name="theme-color" content={site.themeColor} />
+        <meta property="og:site_name" content={site.name} />
+        <meta property="og:title" content={resolvedTitle} />
+        <meta property="og:description" content={resolvedDescription} />
+        <meta property="og:type" content={type} />
+        <meta property="og:url" content={canonicalUrl} />
+        <meta property="og:image" content={imageUrl} />
+        <meta property="og:image:secure_url" content={imageUrl} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:alt" content={imageAlt} />
+        <meta property="og:locale" content={lang === 'zh-tw' ? 'zh_TW' : site.locale} />
+        {type === 'article' && publishedTime && (
+            <meta property="article:published_time" content={publishedTime} />
+        )}
+        {type === 'article' && modifiedTime && (
+            <meta property="article:modified_time" content={modifiedTime} />
+        )}
+        {type === 'article' && authors.map((author) => (
+            <meta property="article:author" content={author} />
+        ))}
+        {type === 'article' && tags.map((tag) => (
+            <meta property="article:tag" content={tag} />
+        ))}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={resolvedTitle} />
+        <meta name="twitter:description" content={resolvedDescription} />
+        <meta name="twitter:image" content={imageUrl} />
+        <meta name="twitter:image:alt" content={imageAlt} />
+        <meta name="generator" content={Astro.generator} />
+        {jsonLdItems.map((item) => (
+            <script is:inline type="application/ld+json" set:html={safeJsonLd(item)} />
+        ))}
+        <title>{resolvedTitle}</title>
+    </head>
+    <body id="top">
+        <Header hideOnScroll={hideHeaderOnScroll} />
+        <main>
+            <slot />
+        </main>
+        <Footer />
+        <LinkEffects />
+    </body>
+</html>
+
+<style>
+    html,
+    body {
+        background-color: var(--color-background);
+        margin: 0;
+        width: 100%;
+        height: 100%;
+    }
+
+    main {
+        padding-top: 4rem;
+    }
+</style>

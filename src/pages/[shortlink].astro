@@ -1,0 +1,36 @@
+---
+import NotFoundContent from '../components/NotFoundContent.astro';
+import { site } from '../data/site';
+import { shortlinkEntries } from '../data/shortlinks';
+import Layout from '../layouts/Layout.astro';
+
+export function getStaticPaths() {
+    return shortlinkEntries.map(({ slug, href }) => ({
+        params: { shortlink: slug },
+        props: { href },
+    }));
+}
+
+const { href } = Astro.props;
+
+if (href) {
+    return Astro.redirect(href, 302);
+}
+
+Astro.response.status = 404;
+
+const title = `404 | ${site.name}`;
+const description = 'The page you were looking for is not here.';
+---
+
+<Layout
+    title={title}
+    description={description}
+    canonicalPath="/404"
+    image={site.defaultOgImage}
+    imageAlt={`${site.name} social image`}
+    robots="noindex, follow"
+>
+    <NotFoundContent />
+</Layout>
+
