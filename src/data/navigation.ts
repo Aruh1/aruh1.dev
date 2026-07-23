@@ -18,4 +18,3 @@ export const footerLinks = [
     { label: "Email", href: "mailto:hi@aruh1.dev" },
     { label: "Discord", href: "https://aruh1.dev/discord" }
 ] as const
-
