@@ -1,8 +1,7 @@
 export const site = {
     name: "Aruh1",
     title: "Aruh1",
-    description:
-        "Hey there! I build stuff, and full-stack web apps.",
+    description: "Hey there! I build stuff, and full-stack web apps.",
     url: "https://aruh1.dev",
     language: "en",
     locale: "en_US",
