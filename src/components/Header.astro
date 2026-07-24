@@ -3,8 +3,6 @@ import MdiKeyboardArrowRight from "~icons/mdi/keyboard-arrow-right";
 import MdiGithub from "~icons/mdi/github";
 import MdiHeart from "~icons/mdi/heart";
 import IcSharpEmail from "~icons/ic/sharp-email";
-import MdiContentCopy from "~icons/mdi/content-copy";
-import MdiCheck from "~icons/mdi/check";
 import MobileMenu from "./MobileMenu.astro";
 import { navigationItems, socialLinks } from "../data/navigation";
 import { site } from "../data/site";
@@ -19,7 +17,7 @@ type Props = {
     hideOnScroll?: boolean;
 };
 
-const { hideOnScroll = false } = Astro.props;
+const { hideOnScroll = true } = Astro.props;
 const brandLabel = site.name.toUpperCase();
 ---
 
@@ -91,16 +89,6 @@ const brandLabel = site.name.toUpperCase();
             <MobileMenu />
         </div>
     </div>
-
-    <div class="ssh-copy-cursor" data-copy-cursor aria-hidden="true">
-        <span class="ssh-copy-cursor-icon ssh-copy-cursor-icon-copy">
-            <MdiContentCopy />
-        </span>
-        <span class="ssh-copy-cursor-icon ssh-copy-cursor-icon-success">
-            <MdiCheck />
-        </span>
-        <span data-copy-cursor-label>Copy</span>
-    </div>
 </header>
 
 <style>
@@ -122,76 +110,14 @@ const brandLabel = site.name.toUpperCase();
         text-transform: uppercase;
     }
 
-    .desktop-header-grid,
     .desktop-header-nav {
         display: none;
     }
 
     @media (min-width: 800px) {
-        .desktop-header-grid {
-            display: grid;
-        }
-
         .desktop-header-nav {
             display: flex;
         }
-    }
-
-    .ssh-copy-button {
-        color: inherit;
-        cursor: none;
-        background: transparent;
-    }
-
-    .ssh-copy-button:focus-visible {
-        outline: 1px solid var(--color-primary);
-        outline-offset: -1px;
-    }
-
-    .ssh-copy-cursor {
-        position: fixed;
-        top: 0;
-        left: 0;
-        z-index: 50;
-        display: flex;
-        align-items: center;
-        gap: 0.35rem;
-        padding: 0.35rem 0.5rem;
-        border: 1px solid var(--color-border);
-        background: var(--color-background);
-        color: var(--color-text);
-        font-size: 0.75rem;
-        line-height: 1;
-        opacity: 0;
-        pointer-events: none;
-        transform: translate3d(-999px, -999px, 0);
-        transition:
-            color 160ms ease-out,
-            border-color 160ms ease-out,
-            opacity 120ms ease-out;
-    }
-
-    .ssh-copy-cursor.is-visible {
-        opacity: 1;
-    }
-
-    .ssh-copy-cursor.is-success {
-        border-color: var(--color-success);
-        color: var(--color-success);
-    }
-
-    .ssh-copy-cursor-icon {
-        display: flex;
-        font-size: 0.95rem;
-    }
-
-    .ssh-copy-cursor-icon-success,
-    .ssh-copy-cursor.is-success .ssh-copy-cursor-icon-copy {
-        display: none;
-    }
-
-    .ssh-copy-cursor.is-success .ssh-copy-cursor-icon-success {
-        display: flex;
     }
 
     .header-link {
@@ -273,14 +199,7 @@ const brandLabel = site.name.toUpperCase();
 </style>
 
 <script>
-    import { createAnimatable } from 'animejs';
-
     const header = document.querySelector('[data-hide-on-scroll="true"]');
-    const copyButtons = document.querySelectorAll('[data-copy-ssh]');
-    const cursorHint = document.querySelector('[data-copy-cursor]');
-    const cursorLabel = document.querySelector('[data-copy-cursor-label]');
-    const cursorOffset = 14;
-    let successTimeout: number | undefined;
 
     if (header instanceof HTMLElement) {
         let lastScrollY = window.scrollY;
@@ -309,91 +228,6 @@ const brandLabel = site.name.toUpperCase();
             'pagehide',
             () => {
                 window.removeEventListener('scroll', updateHeaderVisibility);
-            },
-            { once: true },
-        );
-    }
-
-    const cursorAnimatable =
-        cursorHint instanceof HTMLElement
-            ? createAnimatable(cursorHint, {
-                  x: 180,
-                  y: 180,
-                  ease: 'out(3)',
-              })
-            : null;
-
-    const resetCopyCursor = () => {
-        window.clearTimeout(successTimeout);
-        cursorHint?.classList.remove('is-success');
-
-        if (cursorLabel) {
-            cursorLabel.textContent = 'Copy';
-        }
-    };
-
-    const showCopyCursor = (event: PointerEvent) => {
-        resetCopyCursor();
-        cursorAnimatable?.x(event.clientX + cursorOffset, 0);
-        cursorAnimatable?.y(event.clientY + cursorOffset, 0);
-        cursorHint?.classList.add('is-visible');
-    };
-
-    const hideCopyCursor = () => {
-        cursorHint?.classList.remove('is-visible');
-        resetCopyCursor();
-    };
-
-    const moveCopyCursor = (event: PointerEvent) => {
-        cursorAnimatable?.x(event.clientX + cursorOffset);
-        cursorAnimatable?.y(event.clientY + cursorOffset);
-    };
-
-    const writeClipboard = async (value: string) => {
-        if (!navigator.clipboard?.writeText) {
-            throw new Error('Clipboard API is unavailable.');
-        }
-
-        await navigator.clipboard.writeText(value);
-    };
-
-    copyButtons.forEach((copyButton) => {
-        if (!(copyButton instanceof HTMLElement)) {
-            return;
-        }
-
-        copyButton.addEventListener('pointerenter', showCopyCursor);
-        copyButton.addEventListener('pointermove', moveCopyCursor);
-        copyButton.addEventListener('pointerleave', hideCopyCursor);
-        copyButton.addEventListener('click', async () => {
-            const value = copyButton.dataset.copyValue;
-
-            if (!value || !cursorHint) {
-                return;
-            }
-
-            try {
-                await writeClipboard(value);
-                cursorHint.classList.add('is-success');
-
-                if (cursorLabel) {
-                    cursorLabel.textContent = 'Copied';
-                }
-
-                window.clearTimeout(successTimeout);
-                successTimeout = window.setTimeout(resetCopyCursor, 1200);
-            } catch {
-                resetCopyCursor();
-            }
-        });
-    });
-
-    if (copyButtons.length) {
-        window.addEventListener(
-            'pagehide',
-            () => {
-                window.clearTimeout(successTimeout);
-                cursorAnimatable?.revert();
             },
             { once: true },
         );

@@ -97,21 +97,17 @@ import { navigationItems } from "../data/navigation";
     }
 
     .mobile-menu-button:hover,
-    .mobile-menu-button:focus-visible,
-    .mobile-menu-button[aria-expanded="true"] {
-        color: var(--color-primary);
-    }
-
     .mobile-menu-button:focus-visible {
-        outline: 1px solid var(--color-primary);
-        outline-offset: -1px;
+        background: var(--color-text);
+        color: var(--color-background);
+        outline: none;
     }
 
     .mobile-menu-icon {
         position: relative;
         display: grid;
-        width: 1.5rem;
-        height: 1.5rem;
+        width: 1.25rem;
+        height: 1.25rem;
         place-items: center;
     }
 
@@ -119,13 +115,11 @@ import { navigationItems } from "../data/navigation";
     .mobile-menu-close-icon {
         position: absolute;
         inset: 0;
-        display: grid;
-        place-items: center;
-    }
-
-    .mobile-menu-grid-icon,
-    .mobile-menu-close-icon {
-        font-size: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        transition: opacity 180ms ease-out, transform 180ms ease-out;
     }
 
     .mobile-menu-close-icon {
@@ -135,124 +129,96 @@ import { navigationItems } from "../data/navigation";
 
     .mobile-menu-overlay {
         position: fixed;
+        inset: 0;
         top: 4rem;
-        right: 0;
-        bottom: 0;
-        left: 0;
         z-index: 100;
         display: none;
-        overflow-x: hidden;
-        overflow-y: auto;
-        overscroll-behavior: contain;
         background: var(--color-background);
-        color: var(--color-text);
         opacity: 0;
-        -webkit-overflow-scrolling: touch;
+        pointer-events: none;
+        transition: opacity 220ms ease-out;
     }
 
-    .mobile-menu-overlay.is-open,
-    .mobile-menu-overlay.is-animating {
+    .mobile-menu-overlay.is-open {
         display: block;
+        opacity: 1;
+        pointer-events: auto;
     }
 
     .mobile-menu-content {
-        position: relative;
         display: flex;
-        min-height: calc(100svh - 4rem);
         flex-direction: column;
-        padding: 1rem;
+        justify-content: space-between;
+        height: calc(100vh - 4rem);
+        padding: 1.5rem;
+        overflow-y: auto;
+
+        -webkit-overflow-scrolling: touch;
     }
 
     .mobile-menu-nav {
-        display: grid;
-    }
-
-    .mobile-menu-link,
-    .mobile-menu-contact-link,
-    .mobile-menu-hire,
-    .mobile-menu-ssh {
-        background: var(--color-background);
-        color: inherit;
-        text-decoration: none;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
     }
 
     .mobile-menu-link {
         display: flex;
-        min-height: 4.5rem;
         align-items: center;
-        border-bottom: 1px solid var(--color-border);
-        padding: 0 1rem;
-        font-size: clamp(1.75rem, 9vw, 4rem);
-        font-weight: 700;
+        justify-content: space-between;
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--color-border);
+        background: var(--color-background);
+        color: var(--color-text);
+        font-size: 1.125rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-decoration: none;
         text-transform: uppercase;
+
+        transition: color 180ms ease-out, background 180ms ease-out;
     }
 
     .mobile-menu-link span {
         display: flex;
         align-items: center;
-        gap: 0.35rem;
+        gap: 0.5rem;
     }
 
     .mobile-menu-contact {
-        display: grid;
-        margin-top: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-top: 1.5rem;
     }
 
     .mobile-menu-contact-link {
         display: flex;
-        min-height: 3.5rem;
         align-items: center;
         justify-content: space-between;
-        gap: 1rem;
-        border-bottom: 1px solid var(--color-border);
-        padding: 0 1rem;
-    }
-
-    .mobile-menu-contact-link span:first-child {
-        font-size: 1.125rem;
-        font-weight: 700;
-    }
-
-    .mobile-menu-contact-link span:last-child {
-        color: var(--color-primary);
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--color-border);
+        background: var(--color-background);
+        color: var(--color-text);
         font-size: 0.875rem;
-        text-align: right;
+        text-decoration: none;
+        transition: color 180ms ease-out, background 180ms ease-out;
     }
 
-    .mobile-menu-hire,
-    .mobile-menu-ssh {
+    .mobile-menu-hire {
         display: flex;
-        min-height: 4.5rem;
         align-items: center;
         justify-content: space-between;
-        gap: 1rem;
-        border-bottom: 1px solid var(--color-border);
-        padding: 0 1rem;
-        text-align: left;
-        text-transform: uppercase;
-    }
-
-    .mobile-menu-ssh {
-        border: 0;
-        border-bottom: 1px solid var(--color-border);
-        text-transform: none;
-    }
-
-    .mobile-menu-hire span:first-child,
-    .mobile-menu-ssh span:first-child {
-        font-size: 1.125rem;
+        margin-top: 1.5rem;
+        padding: 0.875rem 1rem;
+        border: 1px solid var(--color-primary);
+        background: var(--color-primary);
+        color: var(--color-background);
         font-weight: 700;
-    }
-
-    .mobile-menu-hire span:last-child,
-    .mobile-menu-ssh span:last-child {
-        font-size: 1rem;
-    }
-
-    .mobile-menu-ssh span:first-child {
-        color: var(--color-primary);
-        font-weight: 400;
+        letter-spacing: 0.1em;
+        text-decoration: none;
+        text-transform: uppercase;
+        transition: opacity 180ms ease-out;
     }
 
     .mobile-menu-link:hover,
@@ -260,9 +226,7 @@ import { navigationItems } from "../data/navigation";
     .mobile-menu-contact-link:hover,
     .mobile-menu-contact-link:focus-visible,
     .mobile-menu-hire:hover,
-    .mobile-menu-hire:focus-visible,
-    .mobile-menu-ssh:hover,
-    .mobile-menu-ssh:focus-visible {
+    .mobile-menu-hire:focus-visible {
         color: var(--color-primary);
         outline: none;
     }
@@ -293,24 +257,13 @@ import { navigationItems } from "../data/navigation";
     const closeIcon = document.querySelector('[data-mobile-menu-close-icon]');
     const menuItems = Array.from(document.querySelectorAll('[data-mobile-menu-item]'));
     const menuLinks = document.querySelectorAll('[data-mobile-menu-link]');
-    const sshCopyButton = document.querySelector('[data-mobile-ssh-copy]');
-    const sshCopyLabel = document.querySelector('[data-mobile-ssh-label]');
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     let isOpen = false;
     let isAnimating = false;
-    let copiedTimeout: number | undefined;
 
     if (menu instanceof HTMLElement && menu.parentElement !== document.body) {
         document.body.append(menu);
     }
-
-    const writeClipboard = async (value: string) => {
-        if (!navigator.clipboard?.writeText) {
-            throw new Error('Clipboard API is unavailable.');
-        }
-
-        await navigator.clipboard.writeText(value);
-    };
 
     const setMenuOpenState = (nextOpen: boolean) => {
         if (!(menu instanceof HTMLElement) || !(toggle instanceof HTMLElement)) {
@@ -485,39 +438,9 @@ import { navigationItems } from "../data/navigation";
         }
     });
 
-    if (sshCopyButton instanceof HTMLElement) {
-        sshCopyButton.addEventListener('click', async () => {
-            const value = sshCopyButton.dataset.copyValue;
-
-            if (!value) {
-                return;
-            }
-
-            try {
-                await writeClipboard(value);
-
-                if (sshCopyLabel) {
-                    sshCopyLabel.textContent = 'Copied';
-                }
-
-                window.clearTimeout(copiedTimeout);
-                copiedTimeout = window.setTimeout(() => {
-                    if (sshCopyLabel) {
-                        sshCopyLabel.textContent = `$ ${value}`;
-                    }
-                }, 1200);
-            } catch {
-                if (sshCopyLabel) {
-                    sshCopyLabel.textContent = `$ ${value}`;
-                }
-            }
-        });
-    }
-
     window.addEventListener(
         'pagehide',
         () => {
-            window.clearTimeout(copiedTimeout);
             document.documentElement.style.overflow = '';
         },
         { once: true },

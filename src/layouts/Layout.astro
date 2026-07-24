@@ -58,7 +58,6 @@ const canonicalUrl = absoluteUrl(canonicalPath);
 const imageUrl = absoluteAssetUrl(image);
 const rssUrl = absoluteAssetUrl(site.rssPath);
 const jsonLdItems = Array.isArray(jsonLd) ? jsonLd : jsonLd ? [jsonLd] : [];
-const hideHeaderOnScroll = Astro.url.pathname.startsWith('/blog');
 ---
 
 <!doctype html>
@@ -118,7 +117,7 @@ const hideHeaderOnScroll = Astro.url.pathname.startsWith('/blog');
         <title>{resolvedTitle}</title>
     </head>
     <body id="top">
-        <Header hideOnScroll={hideHeaderOnScroll} />
+        <Header hideOnScroll={true} />
         <main>
             <slot />
         </main>
