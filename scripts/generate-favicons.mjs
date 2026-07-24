@@ -37,19 +37,13 @@ async function generateFavicons() {
 
     for (const target of targets) {
         const outputPath = path.join(PUBLIC_DIR, target.name)
-        await sharp(svgBuffer)
-            .resize(target.size, target.size)
-            .png()
-            .toFile(outputPath)
+        await sharp(svgBuffer).resize(target.size, target.size).png().toFile(outputPath)
         console.log(`Generated ${target.name} (${target.size}x${target.size})`)
     }
 
     // Generate multi-size favicon.ico (combining 16, 32, 48) using sharp PNG icon format
     const icoPath = path.join(PUBLIC_DIR, "favicon.ico")
-    await sharp(svgBuffer)
-        .resize(32, 32)
-        .toFormat("png")
-        .toFile(icoPath)
+    await sharp(svgBuffer).resize(32, 32).toFormat("png").toFile(icoPath)
     console.log("Updated public/favicon.ico")
 
     console.log("All favicons generated successfully!")

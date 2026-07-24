@@ -9,7 +9,7 @@ export const site = {
     email: "hi@aruh1.dev",
     themeColor: "#ff8b2b",
     rssPath: "/rss.xml",
-    sitemapPath: "/sitemap.xml",
+    sitemapPath: "/sitemap-index.xml",
     defaultOgImage: "/og.png",
     social: {
         github: "https://github.com/aruh1",
