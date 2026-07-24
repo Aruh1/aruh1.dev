@@ -1,0 +1,187 @@
+---
+import MdiArrowTopRight from '~icons/mdi/arrow-top-right';
+import MdiBriefcaseOutline from '~icons/mdi/briefcase-outline';
+import MdiMapMarkerOutline from '~icons/mdi/map-marker-outline';
+import Layout from '../layouts/Layout.astro';
+import { site } from '../data/site';
+import { experience, type ExperienceItem } from '../data/experience';
+import { absoluteUrl } from '../lib/seo';
+
+const title = `Experience | ${site.name}`;
+const description =
+    'Engineering journey, work experience, and technical contributions of Aruh1.';
+const experienceJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    name: title,
+    description,
+    url: absoluteUrl('/experience'),
+    inLanguage: site.language,
+    isPartOf: {
+        '@type': 'WebSite',
+        name: site.name,
+        url: absoluteUrl('/'),
+    },
+};
+---
+
+<Layout
+    title={title}
+    description={description}
+    canonicalPath="/experience"
+    image={site.defaultOgImage}
+    imageAlt="Aruh1 experience page social image"
+    jsonLd={experienceJsonLd}
+>
+    <section class="experience-hero border-t border-border px-6 py-16 text-text sm:px-10 sm:py-20">
+        <div class="experience-shell relative z-10 flex justify-center">
+            <div class="experience-hero-copy max-w-4xl space-y-6 text-center">
+                <p class="font-mono text-sm uppercase tracking-[0.16em] text-primary">
+                    {experience.hero.eyebrow}
+                </p>
+
+                <h1 class="text-4xl font-bold uppercase tracking-[0.12em] text-text sm:text-6xl">
+                    {experience.hero.titleLines.map((line) => (
+                        <span class="block">{line}</span>
+                    ))}
+                </h1>
+
+                <p class="experience-copy mx-auto max-w-2xl text-lg leading-8 text-text/70">
+                    {experience.hero.description}
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <section class="border-t border-border px-6 py-20 sm:px-10 sm:py-24" data-reveal-section>
+        <div class="experience-shell space-y-12">
+            <div class="max-w-sm">
+                <h2
+                    class="about-reveal about-reveal-heading text-4xl font-bold uppercase tracking-[0.12em] text-text sm:text-5xl"
+                    data-section-reveal
+                >
+                    <span>WORK EXPERIENCE</span>
+                </h2>
+            </div>
+
+            <div class="space-y-8">
+                {experience.experiences.map((item: ExperienceItem) => (
+                    <article class="experience-card group border border-border bg-background p-6 transition-colors hover:border-primary/50 sm:p-8">
+                        <div class="space-y-6">
+                            <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                                <div class="space-y-1">
+                                    <div class="flex flex-wrap items-center gap-3">
+                                        <h3 class="text-2xl font-bold text-text">
+                                            {item.role}
+                                        </h3>
+                                        {item.href && (
+                                            <a
+                                                class="inline-flex items-center text-primary hover:underline"
+                                                href={item.href}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                            >
+                                                <MdiArrowTopRight class="text-xl" aria-hidden="true" />
+                                            </a>
+                                        )}
+                                    </div>
+                                    <p class="font-mono text-base font-semibold text-primary">
+                                        {item.company}
+                                    </p>
+                                </div>
+
+                                <div class="flex flex-wrap items-center gap-3 font-mono text-xs uppercase tracking-[0.12em] text-text/60">
+                                    <span class="inline-flex items-center gap-1 border border-border px-2.5 py-1">
+                                        <MdiBriefcaseOutline aria-hidden="true" />
+                                        {item.period}
+                                    </span>
+                                    <span class="inline-flex items-center gap-1 border border-border px-2.5 py-1">
+                                        <MdiMapMarkerOutline aria-hidden="true" />
+                                        {item.location}
+                                    </span>
+                                    <span class="border border-primary/40 px-2.5 py-1 text-primary">
+                                        {item.type}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <p class="experience-copy text-base leading-7 text-text/80">
+                                {item.description}
+                            </p>
+
+                            <div class="space-y-2">
+                                <p class="font-mono text-xs uppercase tracking-[0.14em] text-text/50">
+                                    Key Highlights
+                                </p>
+                                <ul class="space-y-2 text-sm text-text/70">
+                                    {item.highlights.map((highlight) => (
+                                        <li class="flex items-start gap-2">
+                                            <span class="select-none text-primary">—</span>
+                                            <span>{highlight}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+
+                            <div class="flex flex-wrap gap-2 pt-2">
+                                {item.skills.map((skill) => (
+                                    <span class="border border-border px-2.5 py-1 font-mono text-xs uppercase tracking-[0.12em] text-text/60 transition-colors group-hover:border-border/80">
+                                        #{skill}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    </article>
+                ))}
+            </div>
+        </div>
+    </section>
+</Layout>
+
+<style>
+    .experience-shell {
+        width: min(100%, 72rem);
+        margin: 0 auto;
+    }
+
+    .experience-copy {
+        font-family: "Inter", var(--font-sans);
+    }
+
+    .about-reveal {
+        position: relative;
+        display: block;
+        overflow: hidden;
+        color: var(--color-text);
+        transition: color 300ms ease-out var(--about-reveal-delay, 0ms);
+    }
+
+    .about-reveal::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        transform: scaleX(0);
+        transform-origin: left;
+        background: var(--color-text);
+        transition: transform 520ms ease-out var(--about-reveal-delay, 0ms);
+    }
+
+    .about-reveal > span {
+        position: relative;
+        z-index: 1;
+    }
+
+    .about-reveal-heading {
+        width: fit-content;
+        padding: 0.08em 0.14em;
+        margin-inline: -0.14em;
+    }
+
+    .about-reveal.is-visible {
+        color: var(--color-background);
+    }
+
+    .about-reveal.is-visible::before {
+        transform: scaleX(1);
+    }
+</style>
