@@ -16,6 +16,7 @@ const excludedPaths = new Set([
 // https://astro.build/config
 export default defineConfig({
     site: "https://aruh1.dev",
+    trailingSlash: "never",
     integrations: [
         sitemap({
             filter: page => {

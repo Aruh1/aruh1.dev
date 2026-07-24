@@ -13,7 +13,7 @@ export const GET: APIRoute = async context => {
         title: `${site.name} Blog`,
         description: "Notes, experiments, and write-ups from Aruh1.",
         site: context.site ?? site.url,
-        trailingSlash: true,
+        trailingSlash: false,
         items: posts.map(post => ({
             title: post.data.title,
             description: post.data.description,
