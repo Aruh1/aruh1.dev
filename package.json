@@ -30,7 +30,7 @@
     },
     "devDependencies": {
         "@astrojs/check": "^0.9.9",
-        "@iconify/json": "^2.2.504",
+        "@iconify/json": "^2.2.505",
         "oxfmt": "^0.60.0",
         "oxlint": "^1.75.0",
         "typescript": "^5.9.3",

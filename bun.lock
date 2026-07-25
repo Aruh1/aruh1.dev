@@ -21,7 +21,7 @@
       },
       "devDependencies": {
         "@astrojs/check": "^0.9.9",
-        "@iconify/json": "^2.2.504",
+        "@iconify/json": "^2.2.505",
         "oxfmt": "^0.60.0",
         "oxlint": "^1.75.0",
         "typescript": "^5.9.3",
@@ -186,7 +186,7 @@
 
     "@fontsource/space-grotesk": ["@fontsource/space-grotesk@5.3.0", "", {}, "sha512-ksnGizDPXIDuvqcTYTSrmZ+evx9sDlS8rp7+42BQ7wU+spt3twEoXfbJz672C+5CLg6VeUQwRy5RXshWb67LcQ=="],
 
-    "@iconify/json": ["@iconify/json@2.2.504", "", { "dependencies": { "@iconify/types": "*", "pathe": "^2.0.3" } }, "sha512-gNFzZxKuRtPNyEMA8TmFMwVcS4vhT4zpAVBnMCG/PILvNu4N9Z8ksvJZWtcuK3Yn6vbeFj0iIwlOLPKR/H1pkA=="],
+    "@iconify/json": ["@iconify/json@2.2.505", "", { "dependencies": { "@iconify/types": "*", "pathe": "^2.0.3" } }, "sha512-/Iy/dtiPOhGt1lMGyXWgNEqnm39g1LShAzRuT8ZIToqmUpVqDC+l20w2jj2C9YKjCgOmSBX/9j752vN+yIRyBw=="],
 
     "@iconify/types": ["@iconify/types@2.0.0", "", {}, "sha512-+wluvCrRhXrhyOmRDJ3q8mux9JkKy5SJ/v8ol2tu4FVjyYvtEzkc/3pK15ET6RKg4b4w4BmTk1+gsCUhf21Ykg=="],
 

@@ -1,6 +1,5 @@
 ---
 import { render } from 'astro:content';
-import NewsletterSubscribe from '../../components/NewsletterSubscribe.astro';
 import { getPublishedBlogPosts } from '../../data/blog';
 import Layout from '../../layouts/Layout.astro';
 import { site } from '../../data/site';
@@ -143,10 +142,6 @@ const formatDate = (date: Date) =>
             <div class="markdown-content">
                 <Content />
             </div>
-        </div>
-
-        <div class="blog-post-newsletter">
-            <NewsletterSubscribe />
         </div>
     </article>
 
