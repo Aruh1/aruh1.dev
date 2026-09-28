@@ -209,6 +209,50 @@ const formatDate = (date: Date) =>
                 ignoredTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
                 throwOnError: false,
             });
+
+            const mermaidBlocks = markdownContainer.querySelectorAll(
+                'pre[data-language="mermaid"], code.language-mermaid',
+            );
+            if (mermaidBlocks.length > 0) {
+                import('mermaid').then(async ({ default: mermaid }) => {
+                    mermaid.initialize({
+                        startOnLoad: false,
+                        theme: 'base',
+                        themeVariables: {
+                            darkMode: true,
+                            background: '#0a0a0a',
+                            primaryColor: '#161616',
+                            primaryTextColor: '#c7c7c7',
+                            primaryBorderColor: '#ff8b2b',
+                            lineColor: '#ff8b2b',
+                            secondaryColor: '#111111',
+                            tertiaryColor: '#0a0a0a',
+                            edgeLabelBackground: '#111111',
+                            nodeBorder: '#ff8b2b',
+                            clusterBkg: '#0a0a0a',
+                            clusterBorder: '#303030',
+                            titleColor: '#ff8b2b',
+                            fontFamily: '"Space Grotesk", sans-serif',
+                        },
+                    });
+
+                    for (let i = 0; i < mermaidBlocks.length; i++) {
+                        const el = mermaidBlocks[i];
+                        const target = el.tagName === 'CODE' ? el.parentElement || el : el;
+                        const code = el.textContent || '';
+                        const id = `mermaid-chart-${i}-${Date.now()}`;
+                        try {
+                            const { svg } = await mermaid.render(id, code);
+                            const container = document.createElement('div');
+                            container.className = 'mermaid-container my-8 flex justify-center overflow-x-auto';
+                            container.innerHTML = svg;
+                            target.replaceWith(container);
+                        } catch (err) {
+                            console.error('Failed to render mermaid diagram:', err);
+                        }
+                    }
+                });
+            }
         }
 
         const markdownImages = Array.from(
@@ -442,6 +486,21 @@ const formatDate = (date: Date) =>
         margin: 1.5rem 0;
         overflow-x: auto;
         overflow-y: hidden;
+    }
+
+    .markdown-content :global(.mermaid-container) {
+        display: flex;
+        justify-content: center;
+        margin: 2rem 0;
+        padding: 1.5rem 1rem;
+        background: color-mix(in srgb, var(--color-background) 70%, #000);
+        border: 1px solid var(--color-border);
+        overflow-x: auto;
+    }
+
+    .markdown-content :global(.mermaid-container svg) {
+        max-width: 100%;
+        height: auto;
     }
 
     .markdown-content :global(pre) {

@@ -38,28 +38,35 @@ Citra medis sering kali disimpan dalam format monokrom atau memiliki sedikit gra
 - Seluruh operasi penapisan hanya dikenakan pada **channel Luminansi ($L$)**.
 - Channel krominansi ($A$ dan $B$) dibiarkan utuh.
 
-```text
-[ Citra Input: Rontgen_noise_1.png ] (Noise σ: 16.07)
-  │
-  ▼
-[ Tahap 1: Estimasi Derau ] ───> Operator Immerkaer 3×3
-  │
-  ▼
-[ Tahap 2: Pembersihan Derau (Hybrid) ]
-  ├── 2A. Median Filter (3×3) ───> Menghapus salt-and-pepper noise
-  └── 2B. Adaptive Bilateral Filter ───> Menghaluskan noise sisa tanpa blur tepi (σ turun ke 0.51)
-  │
-  ▼
-[ Tahap 3: Penajaman Detail Tulang ] ───> Konvolusi Kernel Laplacian (α = 0.8)
-  │
-  ▼
-[ Tahap 4: Optimasi Kontras & Rentang Dinamis ]
-  ├── 4A. Percentile Stretching (0.5% - 99.5%)
-  ├── 4B. Koreksi Gamma (γ = 0.8 via LUT) ───> Mencerahkan area gelap
-  └── 4C. CLAHE (clipLimit = 2.0, tile = 8×8) ───> Pemerataan kontras adaptif
-  │
-  ▼
-[ Citra Restorasi Diagnostik ] ───> hasil_restorasi.png
+```mermaid
+flowchart TD
+    IN["Citra Input: Rontgen_noise_1.png<br/><b>Noise σ = 16.07</b>"]
+    T1["<b>Tahap 1: Estimasi Derau</b><br/>Operator Immerkaer 3×3"]
+
+    subgraph T2 ["Tahap 2: Pembersihan Derau (Hybrid)"]
+        direction TB
+        T2A["2A. Median Filter (3×3)<br/><i>Eliminasi salt-and-pepper noise</i>"]
+        T2B["2B. Adaptive Bilateral Filter<br/><i>Edge-preserving smoothing (σ sisa → 0.51)</i>"]
+        T2A --> T2B
+    end
+
+    T3["<b>Tahap 3: Penajaman Detail Tulang</b><br/>Konvolusi Kernel Laplacian (α = 0.8)"]
+
+    subgraph T4 ["Tahap 4: Optimasi Kontras & Rentang Dinamis"]
+        direction TB
+        T4A["4A. Percentile Stretching (0.5% - 99.5%)"]
+        T4B["4B. Koreksi Gamma (γ = 0.8 via LUT)"]
+        T4C["4C. CLAHE (clipLimit = 2.0, tile = 8×8)"]
+        T4A --> T4B --> T4C
+    end
+
+    OUT["<b>Citra Restorasi Diagnostik</b><br/>hasil_restorasi.png"]
+
+    IN --> T1
+    T1 --> T2
+    T2 --> T3
+    T3 --> T4
+    T4 --> OUT
 ```
 
 ---
