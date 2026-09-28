@@ -38,28 +38,28 @@ Citra medis sering kali disimpan dalam format monokrom atau memiliki sedikit gra
 - Seluruh operasi penapisan hanya dikenakan pada **channel Luminansi ($L$)**.
 - Channel krominansi ($A$ dan $B$) dibiarkan utuh.
 
-```
-[Citra Input: Rontgen_noise_1.png]
-         │ (Noise Sigma Awal: 16.07)
-         ▼
-[Tahap 1: Estimasi Derau Spasial] ───> Operator Immerkaer 3x3
-         │
-         ▼
-[Tahap 2: Pembersihan Derau Bertingkat (Hybrid)]
-   ├─ 2A. Median Filter (3x3) ───> Mengeliminasi salt-and-pepper noise
-   └─ 2B. Adaptive Bilateral Filter (d=9, sigmaColor=67, sigmaSpace=5) ───> Menghaluskan noise tanpa blur tepi
-         │ (Noise Sigma turun drastis ke: 0.51)
-         ▼
-[Tahap 3: Penajaman Anatomi Tulang] ───> Konvolusi Kernel Laplacian (alpha=0.8)
-         │
-         ▼
-[Tahap 4: Optimasi Kontras & Rentang Dinamis]
-   ├─ 4A. Percentile Stretching (0.5% - 99.5%)
-   ├─ 4B. Gamma Correction (gamma=0.8 via LUT) ───> Mencerahkan area redup
-   └─ 4C. CLAHE (clipLimit=2.0, tileGridSize=8x8) ───> Kontras lokal adaptif
-         │
-         ▼
-[Citra Hasil Restorasi Diagnostik] ───> hasil_tugas1/hasil_restorasi.png
+```text
+[ Citra Input: Rontgen_noise_1.png ] (Noise σ: 16.07)
+  │
+  ▼
+[ Tahap 1: Estimasi Derau ] ───> Operator Immerkaer 3×3
+  │
+  ▼
+[ Tahap 2: Pembersihan Derau (Hybrid) ]
+  ├── 2A. Median Filter (3×3) ───> Menghapus salt-and-pepper noise
+  └── 2B. Adaptive Bilateral Filter ───> Menghaluskan noise sisa tanpa blur tepi (σ turun ke 0.51)
+  │
+  ▼
+[ Tahap 3: Penajaman Detail Tulang ] ───> Konvolusi Kernel Laplacian (α = 0.8)
+  │
+  ▼
+[ Tahap 4: Optimasi Kontras & Rentang Dinamis ]
+  ├── 4A. Percentile Stretching (0.5% - 99.5%)
+  ├── 4B. Koreksi Gamma (γ = 0.8 via LUT) ───> Mencerahkan area gelap
+  └── 4C. CLAHE (clipLimit = 2.0, tile = 8×8) ───> Pemerataan kontras adaptif
+  │
+  ▼
+[ Citra Restorasi Diagnostik ] ───> hasil_restorasi.png
 ```
 
 ---
@@ -80,20 +80,22 @@ Kernel ini menghasilkan respons mendekati nol pada area berpola dan bertekstur, 
 
 Pembersihan noise dilakukan melalui 2 tahap adaptif:
 
-1. **Median Filter ($3 \times 3$):**  
+1. **Median Filter (3 × 3):**  
    Piksel digantikan oleh nilai median dari 8 tetangga di sekitarnya. Filter ini sangat ampuh melenyapkan _salt-and-pepper noise_ tanpa merusak kontur utama.  
-   _Hasil:_ Noise $\sigma$ berkurang dari **16.07** menjadi **2.68**.
+   _Hasil:_ Nilai noise $\sigma$ berkurang dari **16.07** menjadi **2.68**.
 
 2. **Adaptive Bilateral Filter:**  
    Bila masih terdeteksi derau sisa ($\sigma > 1.0$), Bilateral Filter diaplikasikan. Filter non-linear ini menghitung bobot berdasarkan jarak spasial sekaligus selisih intensitas fotometrik:
     - Diameter tetangga: $d = 9$
-    - Sigma spasial: $\sigma_{\text{space}} = 5$
-    - Sigma radiometrik/warna: $\sigma_{\text{color}} = \text{clip}(25 \times \sigma_{\text{sisa}}, 20, 80) = 67$  
+    - Jangkauan spasial: $\sigma_{\text{space}} = 5$
+    - Jangkauan radiometrik/warna: $\sigma_{\text{color}} = \text{clip}(25 \times \sigma_{\text{sisa}}, 20, 80) = 67$  
       _Hasil Akhir:_ Noise sisa ditekan hingga **$\sigma = 0.51$** (penurunan **96.8%**) dengan tepi tulang tetap terjaga tajam (_edge-preserving smoothing_).
 
 ### Tahap 3: Penajaman Detail Anatomi Tulang (Bone Detail Enhancement)
 
 Untuk menonjolkan korteks tulang iga dan klavikula, digunakan teknik _spatial high-boost filtering_ berbasis operator turunan kedua Laplacian:
+
+Kernel Penajaman $K$ (Identitas $+ \alpha \times \text{Laplacian}$):
 
 $$K = \begin{bmatrix} 0 & -\alpha & 0 \\ -\alpha & 1+4\alpha & -\alpha \\ 0 & -\alpha & 0 \end{bmatrix}$$
 
@@ -105,8 +107,16 @@ Kernel ini diaplikasikan melalui konvolusi 2D (`cv2.filter2D`) pada channel $L$ 
 
 ### Tahap 4: Optimasi Kontras & Rentang Dinamis
 
-1. **Percentile Contrast Stretching:** Memotong 0.5% piksel terendah dan tertinggi untuk menyingkirkan _outlier_ intensitas.
-2. **Koreksi Gamma ($\gamma = 0.8$ via Look-Up Table):** Transformasi non-linear $S = 255 \times (I_{\text{norm}})^{0.8}$. Nilai $\gamma < 1.0$ menaikkan iluminasi area gelap (retrokardial/diafragma) tanpa membuat area paru terbakar (_overexposed_).
+1. **Percentile Contrast Stretching:** Memotong 0.5% piksel terendah dan tertinggi untuk menyingkirkan _outlier_ intensitas:
+
+    $$I_{\text{norm}} = \text{clip}\left(\frac{L - P_{0.5}}{P_{99.5} - P_{0.5}}, 0, 1\right)$$
+
+2. **Koreksi Gamma ($\gamma = 0.8$ via Look-Up Table):** Transformasi non-linear:
+
+    $$S = 255 \times (I_{\text{norm}})^{\gamma}$$
+
+    Nilai $\gamma < 1.0$ menaikkan iluminasi area gelap (retrokardial/diafragma) tanpa membuat area paru terbakar (_overexposed_).
+
 3. **Contrast Limited Adaptive Histogram Equalization (CLAHE):**
     - `clipLimit = 2.0`
     - `tileGridSize = (8, 8)`  
@@ -131,7 +141,7 @@ Berikut perbandingan metrik numerik sebelum dan sesudah restorasi:
 
 ### Komparasi Visual (Before vs After)
 
-Panel komparasi $2 \times 3$ menampilkan perbandingan citra utuh, perbesaran (zoom) Region of Interest (ROI) pada tulang klavikula & iga atas (kotak kuning), pergeseran kurva histogram luminansi, dan ringkasan metrik:
+Panel komparasi 2 × 3 menampilkan perbandingan citra utuh, perbesaran (zoom) Region of Interest (ROI) pada tulang klavikula & iga atas (kotak kuning), pergeseran kurva histogram luminansi, dan ringkasan metrik:
 
 ![Komparasi Sebelum vs Sesudah Restorasi](./komparasi_before_after.png)
 
@@ -155,7 +165,7 @@ Berikut adalah kode sumber Python lengkap yang mengimplementasikan seluruh pipel
 
 ```python
 """
-Tugas 1 - Restorasi dan Peningkatan Kualitas Citra Thorax Rontgen
+Restorasi dan Peningkatan Kualitas Citra Thorax Rontgen
 Filtering pada Domain Spasial menggunakan OpenCV (cv2)
 
 Tahapan algoritma
@@ -166,8 +176,8 @@ Tahapan algoritma
   5. Laporan               : komparasi before vs after (citra, zoom, histogram, metrik)
 
 Pemakaian
-  uv run python tasks/tugas1.py                    membaca Rontgen_noise_1.png
-  uv run python tasks/tugas1.py lokasi/citra.png   membaca file lain
+  uv run python restore_xray.py                    membaca Rontgen_noise_1.png
+  uv run python restore_xray.py lokasi/citra.png   membaca file lain
 
 Keluaran (folder tasks/hasil)
   hasil_restorasi.png, komparasi_before_after.png, tahapan_proses.png
@@ -437,10 +447,10 @@ Jalankan program secara langsung dari terminal menggunakan `uv`:
 
 ```bash
 # Menjalankan pemrosesan pada citra default
-uv run python src/tugas1.py
+uv run python src/restore_xray.py
 
 # Atau proses berkas citra Rontgen lainnya
-uv run python src/tugas1.py "path/ke/citra_lain.png"
+uv run python src/restore_xray.py "path/ke/citra_lain.png"
 ```
 
 ---
@@ -451,4 +461,4 @@ Kombinasi metode pemrosesan pada domain spasial terbukti efektif dalam merekonst
 
 1. **Reduksi Derau Tanpa Blur:** Sinergi Median Filter dan Adaptive Bilateral Filter berhasil memotong 96.8% noise tanpa mengikis ketajaman batas organ.
 2. **Korteks Tulang Lebih Jelas:** Konvolusi kernel Laplacian ($\alpha = 0.8$) menegaskan batas tepi tulang untuk mempermudah evaluasi ortopedi dan toraks.
-3. **Pencahayaan Area Redup:** Kombinasi Gamma $0.8$ dan CLAHE membuka detail di balik bayangan jantung dan diafragma tanpa merusak area terang.
+3. **Pencahayaan Area Redup:** Kombinasi Gamma $\gamma = 0.8$ dan CLAHE membuka detail di balik bayangan jantung dan diafragma tanpa merusak area terang.

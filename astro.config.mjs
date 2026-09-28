@@ -26,7 +26,11 @@ export default defineConfig({
         })
     ],
     markdown: {
-        processor: satteri()
+        processor: satteri({
+            features: {
+                math: true
+            }
+        })
     },
     vite: {
         plugins: [

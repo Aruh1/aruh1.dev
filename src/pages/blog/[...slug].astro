@@ -9,6 +9,7 @@ import {
     blogPostOgImagePath,
     blogPostPath,
 } from '../../lib/seo';
+import 'katex/dist/katex.min.css';
 
 type BlogPost = Awaited<ReturnType<typeof getPublishedBlogPosts>>[number];
 type Props = {
@@ -165,6 +166,51 @@ const formatDate = (date: Date) =>
     </div>
 
     <script>
+        import katex from 'katex';
+        import renderMathInElement from 'katex/contrib/auto-render';
+
+        const markdownContainer = document.querySelector('.markdown-content');
+        if (markdownContainer instanceof HTMLElement) {
+            markdownContainer.querySelectorAll('code.language-math, code.math-inline').forEach((el) => {
+                const tex = el.textContent || '';
+                const isAloneInParagraph =
+                    el.parentElement?.tagName === 'P' &&
+                    el.parentElement.textContent?.trim() === tex.trim();
+                const hasDisplaySyntax =
+                    tex.includes('\\begin') ||
+                    tex.includes('\\frac') ||
+                    tex.includes('\\sum') ||
+                    tex.includes('\\int') ||
+                    tex.includes('\n');
+                const isDisplay = isAloneInParagraph || hasDisplaySyntax;
+                const container = document.createElement(isDisplay ? 'div' : 'span');
+                if (isDisplay) {
+                    container.className = 'my-4 flex justify-center overflow-x-auto';
+                }
+                try {
+                    katex.render(tex, container, { displayMode: isDisplay, throwOnError: false });
+                    if (isDisplay && isAloneInParagraph && el.parentElement) {
+                        el.parentElement.replaceWith(container);
+                    } else {
+                        el.replaceWith(container);
+                    }
+                } catch {
+                    // keep original
+                }
+            });
+
+            renderMathInElement(markdownContainer, {
+                delimiters: [
+                    { left: '$$', right: '$$', display: true },
+                    { left: '$', right: '$', display: false },
+                    { left: '\\(', right: '\\)', display: false },
+                    { left: '\\[', right: '\\]', display: true },
+                ],
+                ignoredTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+                throwOnError: false,
+            });
+        }
+
         const markdownImages = Array.from(
             document.querySelectorAll('.markdown-content img'),
         );
@@ -376,11 +422,26 @@ const formatDate = (date: Date) =>
         margin-top: 0.45rem;
     }
 
-    .markdown-content :global(code) {
+    .markdown-content :global(code:not(.language-math):not(.math-inline)) {
         border: 1px solid var(--color-border);
         padding: 0.12rem 0.35rem;
         color: var(--color-primary);
         font-size: 0.92em;
+    }
+
+    .markdown-content :global(code.language-math),
+    .markdown-content :global(code.math-inline) {
+        border: 0;
+        padding: 0;
+        background: transparent;
+        color: inherit;
+        font-size: inherit;
+    }
+
+    .markdown-content :global(.katex-display) {
+        margin: 1.5rem 0;
+        overflow-x: auto;
+        overflow-y: hidden;
     }
 
     .markdown-content :global(pre) {

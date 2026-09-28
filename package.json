@@ -24,6 +24,9 @@
         "@tailwindcss/vite": "^4.3.3",
         "animejs": "^4.5.0",
         "astro": "7.3.5",
+        "katex": "^0.18.9",
+        "rehype-katex": "^7.0.1",
+        "remark-math": "^6.0.0",
         "satori": "^0.33.5",
         "sharp": "^0.35.5",
         "tailwindcss": "^4.3.3"
@@ -31,6 +34,7 @@
     "devDependencies": {
         "@astrojs/check": "^0.9.10",
         "@iconify/json": "^2.2.534",
+        "@types/katex": "^0.16.8",
         "oxfmt": "^0.71.0",
         "oxlint": "^1.86.0",
         "typescript": "^5.9.3",
