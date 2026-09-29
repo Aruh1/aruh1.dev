@@ -1,5 +1,5 @@
 // @ts-check
-import { defineConfig } from "astro/config"
+import { defineConfig, passthroughImageService } from "astro/config"
 import { satteri } from "@astrojs/markdown-satteri"
 import sitemap from "@astrojs/sitemap"
 import tailwindcss from "@tailwindcss/vite"
@@ -25,6 +25,9 @@ export default defineConfig({
             }
         })
     ],
+    image: {
+        service: passthroughImageService()
+    },
     markdown: {
         processor: satteri({
             features: {
