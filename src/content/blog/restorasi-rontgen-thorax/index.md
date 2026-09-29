@@ -135,12 +135,13 @@ Kernel ini diaplikasikan melalui konvolusi 2D (`cv2.filter2D`) pada channel $L$ 
 
 Berikut perbandingan metrik numerik sebelum dan sesudah restorasi:
 
-| Indikator Evaluasi                    | Citra Input (Sebelum) | Citra Restorasi (Sesudah) | Analisis & Manfaat Klinis                                                                  |
-| :------------------------------------ | :-------------------: | :-----------------------: | :----------------------------------------------------------------------------------------- |
-| **Noise Simpangan Baku ($\sigma$)**   |       **16.07**       |         **0.51**          | **Tereduksi 96.8%**. Bintik-bintik derau hilang sepenuhnya, latar bersih.                  |
-| **Kontras Global (Std Dev $L$)**      |       **69.0**        |         **71.6**          | Peningkatan pemisahan gradasi antara jaringan lunak dan struktur tulang.                   |
-| **Rata-rata Area Gelap ($L$)**        |       **38.6**        |         **47.4**          | **Meningkat +22.8%**. Area mediastinum dan dasar paru yang semula pekat kini tampak jelas. |
-| **Rentang Dinamis ($P_1 - P\_{99}$)** |      **0 – 246**      |        **2 – 249**        | Skala abu-abu memanfaatkan dinamika spektrum secara optimal.                               |
+<!-- prettier-ignore -->
+| Indikator Evaluasi                  | Citra Input (Sebelum) | Citra Restorasi (Sesudah) | Analisis & Manfaat Klinis                                                                  |
+| :---------------------------------- | :-------------------: | :-----------------------: | :----------------------------------------------------------------------------------------- |
+| **Noise Simpangan Baku ($\sigma$)** |       **16.07**       |         **0.51**          | **Tereduksi 96.8%**. Bintik-bintik derau hilang sepenuhnya, latar bersih.                  |
+| **Kontras Global (Std Dev $L$)**    |       **69.0**        |         **71.6**          | Peningkatan pemisahan gradasi antara jaringan lunak dan struktur tulang.                   |
+| **Rata-rata Area Gelap ($L$)**      |       **38.6**        |         **47.4**          | **Meningkat +22.8%**. Area mediastinum dan dasar paru yang semula pekat kini tampak jelas. |
+| **Rentang Dinamis ($P_1 - P_{99}$)** |      **0 – 246**      |        **2 – 249**        | Skala abu-abu memanfaatkan dinamika spektrum secara optimal.                               |
 
 ---
 

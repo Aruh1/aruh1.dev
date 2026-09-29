@@ -172,7 +172,7 @@ const formatDate = (date: Date) =>
         const markdownContainer = document.querySelector('.markdown-content');
         if (markdownContainer instanceof HTMLElement) {
             markdownContainer.querySelectorAll('code.language-math, code.math-inline').forEach((el) => {
-                const tex = el.textContent || '';
+                const tex = (el.textContent || '').replace(/\\_/g, '_');
                 const isAloneInParagraph =
                     el.parentElement?.tagName === 'P' &&
                     el.parentElement.textContent?.trim() === tex.trim();
