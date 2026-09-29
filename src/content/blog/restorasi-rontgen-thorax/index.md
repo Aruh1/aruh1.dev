@@ -13,7 +13,7 @@ Dalam dunia medis modern, pencitraan radiografi seperti foto Rontgen toraks (_ch
 
 Namun, tidak semua hasil akuisisi citra X-ray berada dalam kondisi ideal. Gangguan bintik (_noise_) akibat fluktuasi foton detektor digital, keterbatasan dosis radiasi, serta degradasi kontras sering kali menurunkan mutu citra. Kondisi ini menyulitkan pembacaan klinis, terutama saat dokter mencari fraktur mikro atau pola infiltrat halus.
 
-Artikel ini mendokumentasikan implementasi _algorithm_ restorasi dan peningkatan mutu citra digital pada **domain spasial** menggunakan **Python, OpenCV, NumPy, dan Matplotlib**.
+Artikel ini mendokumentasikan implementasi algoritma restorasi dan peningkatan mutu citra digital pada **domain spasial** menggunakan **Python, OpenCV, NumPy, dan Matplotlib**.
 
 ---
 
@@ -95,8 +95,9 @@ Pembersihan noise dilakukan melalui 2 tahap adaptif:
    Bila masih terdeteksi derau sisa ($\sigma > 1.0$), Bilateral Filter diaplikasikan. Filter non-linear ini menghitung bobot berdasarkan jarak spasial sekaligus selisih intensitas fotometrik:
     - Diameter tetangga: $d = 9$
     - Jangkauan spasial: $\sigma_{\text{space}} = 5$
-    - Jangkauan radiometrik/warna: $\sigma_{\text{color}} = \text{clip}(25 \times \sigma_{\text{sisa}}, 20, 80) = 67$  
-      _Hasil Akhir:_ Noise sisa ditekan hingga **$\sigma = 0.51$** (penurunan **96.8%**) dengan tepi tulang tetap terjaga tajam (_edge-preserving smoothing_).
+    - Jangkauan radiometrik/warna: $\sigma_{\text{color}} = \text{clip}(25 \times \sigma_{\text{sisa}}, 20, 80) = 67$
+
+    _Hasil Akhir:_ Noise sisa ditekan hingga **$\sigma = 0.51$** (penurunan **96.8%**) dengan tepi tulang tetap terjaga tajam (_edge-preserving smoothing_).
 
 ### Tahap 3: Penajaman Detail Anatomi Tulang (Bone Detail Enhancement)
 
@@ -455,10 +456,10 @@ Jalankan program secara langsung dari terminal menggunakan `uv`:
 
 ```bash
 # Menjalankan pemrosesan pada citra default
-uv run python src/restore_xray.py
+uv run python restore_xray.py
 
 # Atau proses berkas citra Rontgen lainnya
-uv run python src/restore_xray.py "path/ke/citra_lain.png"
+uv run python restore_xray.py "path/ke/citra_lain.png"
 ```
 
 ---
