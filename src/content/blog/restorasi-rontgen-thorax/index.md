@@ -31,42 +31,45 @@ Dari sudut pandang radiologi, terdapat 3 kebutuhan spesifik yang harus diselesai
 
 Pemrosesan citra digital dapat dilakukan pada domain frekuensi (Fourier) atau domain spasial. Pada kasus ini, pendekatan **Domain Spasial** dipilih karena memberikan kendali langsung atas nilai piksel lokal dan efisiensi komputasi yang tinggi.
 
-### Mempertahankan Rona Citra via Ruang Warna CIE LAB
+### Pemisahan Domain Pemrosesan: BGR Penuh vs Ruang Warna CIE LAB
 
-Citra medis sering kali disimpan dalam format monokrom atau memiliki sedikit gradasi warna display. Untuk menghindari pergeseran rona (_hue distortion_), citra dikonversi terlebih dahulu ke ruang warna **CIE LAB**:
+Citra medis hasil akuisisi digital sering kali tersimpan dalam format tiga kanal (BGR) dengan fluktuasi derau yang mengotori ketiga kanal warna detektor. Untuk itu, strategi pemrosesan dibagi secara terukur:
 
-- Seluruh operasi penapisan hanya dikenakan pada **channel Luminansi ($L$)**.
-- Channel krominansi ($A$ dan $B$) dibiarkan utuh.
+- **Reduksi Derau (Tahap 2):** Dijalankan pada citra **BGR penuh** agar seluruh bintik bising (_chromatic & luminance noise_) di kanal B, G, dan R tereliminasi tuntas tanpa menyisakan residu warna pada kanal kromatik.
+- **Penajaman & Optimasi Kontras (Tahap 3 & 4):** Citra dikonversi ke ruang warna **CIE LAB**. Operasi penajaman korteks tulang (Laplacian) dan pemetaan kontras adaptif (Gamma & CLAHE) hanya dikenakan pada **channel Luminansi ($L$)**, sedangkan channel krominansi ($A$ dan $B$) dibiarkan utuh untuk menghindari pergeseran rona (_hue distortion_) dan aberasi warna.
 
 ```mermaid
 flowchart TD
     IN["Citra Input: Rontgen_noise_1.png<br/><b>Noise σ = 16.07</b>"]
     T1["<b>Tahap 1: Estimasi Derau</b><br/>Operator Immerkaer 3×3"]
 
-    subgraph T2 ["Tahap 2: Pembersihan Derau (Hybrid)"]
+    subgraph T2 ["Tahap 2: Pembersihan Derau BGR (Hybrid)"]
         direction TB
-        T2A["2A. Median Filter (3×3)<br/><i>Eliminasi salt-and-pepper noise</i>"]
+        T2A["2A. Median Filter (3×3)<br/><i>Eliminasi salt-and-pepper noise di seluruh kanal</i>"]
         T2B["2B. Adaptive Bilateral Filter<br/><i>Edge-preserving smoothing (σ sisa → 0.51)</i>"]
         T2A --> T2B
     end
 
-    T3["<b>Tahap 3: Penajaman Detail Tulang</b><br/>Konvolusi Kernel Laplacian (α = 0.8)"]
-
-    subgraph T4 ["Tahap 4: Optimasi Kontras & Rentang Dinamis"]
+    subgraph LAB ["Domain Ruang Warna CIE LAB"]
         direction TB
-        T4A["4A. Percentile Stretching (0.5% - 99.5%)"]
-        T4B["4B. Koreksi Gamma (γ = 0.8 via LUT)"]
-        T4C["4C. CLAHE (clipLimit = 2.0, tile = 8×8)"]
-        T4A --> T4B --> T4C
+        T3["<b>Tahap 3: Penajaman Detail Tulang</b><br/>Konvolusi Kernel Laplacian pada Channel L (α = 0.8)"]
+
+        subgraph T4 ["Tahap 4: Optimasi Kontras & Rentang Dinamis (Channel L)"]
+            direction TB
+            T4A["4A. Percentile Stretching (0.5% - 99.5%)"]
+            T4B["4B. Koreksi Gamma (γ = 0.8 via LUT)"]
+            T4C["4C. CLAHE (clipLimit = 2.0, tile = 8×8)"]
+            T4A --> T4B --> T4C
+        end
+        T3 --> T4
     end
 
     OUT["<b>Citra Restorasi Diagnostik</b><br/>hasil_restorasi.png"]
 
     IN --> T1
     T1 --> T2
-    T2 --> T3
-    T3 --> T4
-    T4 --> OUT
+    T2 --> LAB
+    LAB --> OUT
 ```
 
 ---
@@ -142,7 +145,7 @@ Berikut perbandingan metrik numerik sebelum dan sesudah restorasi:
 | **Noise Simpangan Baku ($\sigma$)** |       **16.07**       |         **0.51**          | **Tereduksi 96.8%**. Bintik-bintik derau hilang sepenuhnya, latar bersih.                  |
 | **Kontras Global (Std Dev $L$)**    |       **69.0**        |         **71.6**          | Peningkatan pemisahan gradasi antara jaringan lunak dan struktur tulang.                   |
 | **Rata-rata Area Gelap ($L$)**      |       **38.6**        |         **47.4**          | **Meningkat +22.8%**. Area mediastinum dan dasar paru yang semula pekat kini tampak jelas. |
-| **Rentang Dinamis ($P_1 - P_{99}$)** |      **0 – 246**      |        **2 – 249**        | Skala abu-abu memanfaatkan dinamika spektrum secara optimal.                               |
+| **Rentang Dinamis ($P_{0.5} - P_{99.5}$)** | **0 – 249** | **2 – 251** | Rentang spektrum dipertahankan mendekati penuh (0–251) dengan pemotongan outlier ekstrem, sementara peningkatan kontras difokuskan pada pemisahan gradasi jaringan (+2.6 std dev) dan pencerahan area redup (+22.8%). |
 
 ---
 
@@ -314,8 +317,10 @@ def optimalkan_kontras(bgr):
 def hitung_metrik(input_, setelah_noise, akhir):
     l_in, l_out = luminans(input_), luminans(akhir)
     gelap = l_in <= np.percentile(l_in, 25)  # 25% piksel tergelap pada citra input
-    p1_in, p99_in = np.percentile(l_in, (1, 99))
-    p1_out, p99_out = np.percentile(l_out, (1, 99))
+    lo_in, hi_in = np.percentile(l_in, PERSENTIL_STRETCH)
+    lo_out, hi_out = np.percentile(l_out, PERSENTIL_STRETCH)
+    p_lo, p_hi = PERSENTIL_STRETCH
+    label_rentang = f"Rentang dinamis (p{p_lo:g} - p{p_hi:g})"
     return [
         (
             "Noise sigma (setelah tahap 2)",
@@ -329,9 +334,9 @@ def hitung_metrik(input_, setelah_noise, akhir):
             f"{l_out[gelap].mean():.1f}",
         ),
         (
-            "Rentang dinamis (p1 - p99)",
-            f"{p1_in:.0f} - {p99_in:.0f}",
-            f"{p1_out:.0f} - {p99_out:.0f}",
+            label_rentang,
+            f"{lo_in:.0f} - {hi_in:.0f}",
+            f"{lo_out:.0f} - {hi_out:.0f}",
         ),
     ]
 
@@ -407,7 +412,7 @@ def main():
         sys.exit(
             f"File tidak ditemukan atau bukan citra: {RAW_PATH_INPUT} (dicari di {path_input})"
         )
-    FOLDER_OUTPUT.mkdir(exist_ok=True)
+    FOLDER_OUTPUT.mkdir(parents=True, exist_ok=True)
 
     bersih, sigma_sisa, sigma_warna = kurangi_noise(citra)
     tajam, kernel = pertajam(bersih, KEKUATAN_SHARPEN)
