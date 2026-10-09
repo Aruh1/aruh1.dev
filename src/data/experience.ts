@@ -1,3 +1,10 @@
+export type ExperienceVideo = {
+    title: string
+    url: string
+    youtubeId: string
+    badge?: string
+}
+
 export type ExperienceItem = {
     role: string
     company: string
@@ -8,6 +15,7 @@ export type ExperienceItem = {
     highlights: string[]
     skills: string[]
     href?: string
+    videos?: ExperienceVideo[]
 }
 
 export const experience = {
@@ -45,7 +53,21 @@ export const experience = {
                 "Adapted to various film genres with a deep understanding of entertainment industry terminology.",
                 "Integrated cultural and contextual understanding to convey messages accurately in translation."
             ],
-            skills: ["WordPress", "SEO", "Localization", "Quality Checking"]
+            skills: ["WordPress", "SEO", "Localization", "Quality Checking"],
+            videos: [
+                {
+                    title: "I Want to Love You Till Your Dying Day @crunchyroll",
+                    url: "https://youtu.be/sivYQYsp2eM",
+                    youtubeId: "sivYQYsp2eM",
+                    badge: "Crunchyroll • Subtitle Indonesia"
+                },
+                {
+                    title: "Roll Over and Die @crunchyroll",
+                    url: "https://youtu.be/xeLkkDQR6P0",
+                    youtubeId: "xeLkkDQR6P0",
+                    badge: "Crunchyroll • Subtitle Indonesia"
+                }
+            ]
         },
         {
             role: "Co-Founder",
