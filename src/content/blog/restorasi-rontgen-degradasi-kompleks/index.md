@@ -78,7 +78,7 @@ flowchart TD
     subgraph T5T6 ["Domain Spasial: Penghalusan & Penajaman"]
         direction TB
         T5["<b>Tahap 5: Adaptive Spatial Wiener Filter</b><br/>scipy.signal.wiener (jendela 5×5) untuk derau sisa"]
-        T6["<b>Tahap 6: Laplacian Bone Detail Sharpening</b><br/>Unsharp mask kanal L (α = 0.8)"]
+        T6["<b>Tahap 6: Penajaman Detail Tulang</b><br/>Penajaman kernel Laplacian pada kanal L (α = 0.8)"]
         T5 --> T6
     end
 
@@ -202,15 +202,18 @@ Hasil luminansi $L_{\text{akhir}}$ kemudian dipadukan kembali dengan kanal kromi
 Tabel berikut menyajikan metrik evaluasi sebelum dan sesudah seluruh rangkaian restorasi:
 
 <!-- prettier-ignore -->
-| Parameter Evaluasi | Citra Input (Sebelum) | Citra Restorasi (Sesudah) | Evaluasi & Manfaat Klinis |
+| Parameter Evaluasi | Citra Input (Sebelum) | Citra Restorasi (Sesudah) | Analisis & Evaluasi Komputasional |
 | :--- | :---: | :---: | :--- |
-| **Energi Puncak Periodik** | **10.58** | **0.11** | **Tereduksi 98.9%**. Pola garis harmonik dan kisi interferensi mekanis tereliminasi tuntas. |
-| **Ketajaman Tepi (Var Laplacian)\*** | **42.8** | **177.8** | **Meningkat +315.4%**. Struktur batas korteks tulang iga dan skapula menjadi sangat tegas dan fokus. |
-| **Derau Acak $\sigma$ (Immerkaer)** | **0.72** | **1.14** | Nilai stabil dalam batas sangat rendah (< 1.5). Kenaikan minor mencerminkan pulihnya frekuensi tinggi detail anatomi dari proses *deblurring*. |
+| **Energi Puncak Periodik** | **10.58** | **0.11** | **Tereduksi 99.0%** (98.96%). Pola garis harmonik dan kisi interferensi mekanis tereliminasi tuntas. |
+| **Ketajaman Tepi (Var Laplacian)\*** | **42.8** | **177.8** | **Meningkat +315.4%**. Struktur batas korteks tulang iga dan skapula menjadi jauh lebih tegas dan terfokus. |
+| **Derau Acak $\sigma$ (Immerkaer)** | **0.72** | **1.14** | Naik moderat (+58.3%), tetap dalam batas rendah (< 1.5). Kenaikan ini wajar karena tahap dekonvolusi membalikkan frekuensi tinggi dan ikut membangkitkan sedikit derau bersama detail asli yang dipulihkan. |
 | **Kontras Global (Std Dev $L$)** | **73.2** | **75.0** | Peningkatan pemisahan dinamis antara densitas jaringan paru dan opasitas tulang. |
 
 > **\*Catatan Metodologi Pengukuran Ketajaman:**  
 > Menghitung varians Laplacian langsung pada citra input mentah yang berderau akan memberikan angka ketajaman semu (_false sharpness_), karena fluktuasi acak tiap piksel derau dianggap sebagai tepi tajam. Oleh karena itu, metrik ketajaman di atas dihitung dengan membandingkan **citra yang telah melalui tahap denoise identik tanpa dekonvolusi (42.8) vs dengan dekonvolusi Wiener (177.8)**, sehingga kenaikan angka murni merefleksikan keberhasilan restorasi blur.
+
+> **Catatan Batasan Evaluasi (No-Reference Metrics):**  
+> Seluruh indikator di atas dievaluasi secara _no-reference_ langsung dari citra keluaran tanpa perbandingan _ground truth_ citra ideal murni maupun penilaian langsung oleh dokter spesialis radiologi. Hasil ini menunjukkan keberhasilan algoritma pada level optimasi komputasional dan kelayakan inspeksi visual, bukan klaim kesiapan diagnostik klinis definitif.
 
 ---
 
@@ -236,7 +239,7 @@ Panel komparasi 2 × 3 menampilkan perbandingan citra utuh, pembesaran _Region o
 
 ### 4. Citra Akhir Hasil Restorasi
 
-Citra resolusi penuh yang bersih dari kisi periodik, tajam, dan siap digunakan untuk evaluasi diagnosis radiologi:
+Citra resolusi penuh yang bersih dari kisi periodik, tajam, dan dioptimalkan untuk inspeksi visual serta analisis metrik komputasional:
 
 ![Hasil Akhir Restorasi Citra Rontgen Thorax](./hasil_restorasi.png)
 
@@ -494,7 +497,7 @@ uv run python tugas2.py "path/ke/citra_rontgen_lain.jpeg"
 
 Restorasi citra berdegradasi kompleks membutuhkan pemahaman matematis mengenai domain operasi yang tepat untuk tiap jenis cacat citra:
 
-1. **Penapisan Derau Periodik di Domain Frekuensi:** Deteksi residual adaptif dan _Gaussian Notch-Reject Filter_ berhasil menurunkan energi puncak harmonik sebesar **98.9%** tanpa mengikis kontur anatomi jaringan paru.
+1. **Penapisan Derau Periodik di Domain Frekuensi:** Deteksi residual adaptif dan _Gaussian Notch-Reject Filter_ berhasil menurunkan energi puncak harmonik sebesar **99.0%** tanpa mengikis kontur anatomi jaringan paru.
 2. **Median Filter Sebelum Dekonvolusi:** Mengeliminasi derau impuls terlebih dahulu adalah kunci krusial guna menghindari artefak cincin (_ringing explosion_) saat inversi spektral.
 3. **Dekonvolusi Wiener dengan Regularisasi:** Mampu membalikkan efek pemburaman PSF optik dan mendongkrak ketajaman tepi trabekula tulang sebesar **+315.4%** secara stabil dengan parameter $K = 0.01$.
-4. **Penyempurnaan Spasial Hibrida:** Perpaduan _Adaptive Spatial Wiener Filter_ dan penajaman Laplacian memastikan citra bebas derau butiran, berfokus tajam, dan siap digunakan untuk evaluasi klinis.
+4. **Penyempurnaan Spasial Hibrida:** Perpaduan _Adaptive Spatial Wiener Filter_ dan penajaman kernel Laplacian memastikan citra bebas derau butiran, berfokus tajam, serta teroptimasi untuk inspeksi visual dan metrik komputasional (dengan catatan validasi diagnostik klinis sesungguhnya membutuhkan proses evaluasi medis lebih lanjut di luar cakupan tugas ini).
