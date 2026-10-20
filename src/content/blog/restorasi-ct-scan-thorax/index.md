@@ -287,35 +287,50 @@ Setiap pemrosesan citra digital berpotensi memunculkan efek samping sekunder:
 
 ## 8. Galeri Visualisasi Hasil & Analisis Grafis
 
-### 1. Pembentukan Sampel Citra Terdegradasi
+### 1. Komparasi Langsung: Sebelum (Before) vs Sesudah (After)
+Perbandingan berdampingan (*side-by-side*) antara citra CT Thorax sebelum restorasi (terdegradasi FBP, streak, dan derau butiran) dan sesudah melalui pipeline restorasi bertingkat, beserta pembesaran ROI pada batas hilum paru-jantung (kotak kuning):
+
+![Komparasi Sebelum vs Sesudah Restorasi](./komparasi_before_after.png)
+
+### 2. Citra Sebelum Restorasi (Input Terdegradasi PACS)
+Citra resolusi penuh yang diterima sistem PACS dengan artefak garis tajam (*streaking*), derau Poisson-Gaussian, dan kontras lokal rendah:
+
+![Citra Sebelum Restorasi (Input Terdegradasi)](./citra_terdegradasi.png)
+
+### 3. Citra Akhir Hasil Restorasi (Sesudah)
+Citra resolusi penuh setelah melalui pipeline lengkap (NLM > TV > HFE > Sharpen) dengan eliminasi streak tuntas, kontras terkalibrasi, dan integritas anatomis yang terjaga:
+
+![Hasil Akhir Restorasi Citra CT Scan Thorax](./hasil_restorasi.png)
+
+### 4. Citra Ground Truth Asli (Referensi)
+Citra klinis resolusi penuh acuan ideal (`normal-ct-chest.jpeg`) sebelum didegradasi:
+
+![Citra Ground Truth Asli](./ground_truth.png)
+
+### 5. Pembentukan Sampel Citra Terdegradasi
 Ilustrasi alur degradasi akuisisi tomografi: dari citra CT ground truth, transformasi Radon sparse-view dengan derau Poisson-Gaussian, rekonstruksi FBP ber-streak, hingga penurunan kontras lokal:
 
 ![Pembuatan Sampel Citra Terdegradasi](./pembuatan_sampel_degradasi.png)
 
-### 2. Tahapan Pemrosesan Citra Digital
+### 6. Tahapan Pemrosesan Citra Digital
 Evolusi citra di setiap tahap penapisan: citra terdegradasi awal $\rightarrow$ peredaman derau NLM $\rightarrow$ perataan streak TV Chambolle $\rightarrow$ kompensasi kontras HFE Fourier 2D $\rightarrow$ penajaman korteks tulang:
 
 ![Tahapan Transformasi Citra Digital](./tahapan_proses.png)
 
-### 3. Komparasi Detail: Ground Truth vs Degradasi vs Restorasi
+### 7. Komparasi Detail 3×3: Ground Truth vs Degradasi vs Restorasi
 Panel evaluasi 3 × 3 memuat perbandingan kanvas utuh, pembesaran ROI pada batas hilum paru-jantung (kotak kuning), peta galat absolut $|\text{Citra} - \text{GT}|$, dan kurva histogram densitas tubuh:
 
-![Komparasi Sebelum vs Sesudah Restorasi](./komparasi_gt_degradasi_hasil.png)
+![Komparasi Detail Ground Truth vs Degradasi vs Restorasi](./komparasi_gt_degradasi_hasil.png)
 
-### 4. Analisis Respons Filter Frekuensi HFE
+### 8. Analisis Respons Filter Frekuensi HFE
 Profil kurva respons degradasi $H_{\text{deg}}(\nu)$, kurva penapis $H_{\text{HFE}}(\nu)$, serta produk transfer gabungan $H_{\text{deg}} \times H_{\text{HFE}}$:
 
 ![Respons Filter Frekuensi](./respons_frekuensi.png)
 
-### 5. Analisis Trade-off Denoise: Streak vs Struktur Vaskular
+### 9. Analisis Trade-off Denoise: Streak vs Struktur Vaskular
 Visualisasi sebaran 70 kombinasi parameter NLM dan TV. Sumbu X merepresentasikan penurunan galat streak (makin ke kanan makin bersih), sedangkan sumbu Y merepresentasikan preservasi pembuluh darah. Sebanyak 58 dari 70 setelan berhasil memenuhi kriteria MINIMUM:
 
 ![Trade-off Denoise](./tradeoff_denoise.png)
-
-### 6. Citra Akhir Hasil Restorasi
-Citra resolusi penuh siap inspeksi dengan eliminasi streak tuntas, kontras terkalibrasi, dan integritas anatomis yang terjaga:
-
-![Hasil Akhir Restorasi Citra CT Scan Thorax](./hasil_restorasi.png)
 
 ---
 
