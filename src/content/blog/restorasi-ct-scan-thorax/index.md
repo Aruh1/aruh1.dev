@@ -31,9 +31,9 @@ Meningkatkan kualitas inspeksi visual anatomi toraks (membedakan parenkim paru, 
 ### Spesifikasi Sampel Input & Pra-Pemrosesan
 Sesuai panduan tugas ("pilih atau buat sampel"), studi kasus ini menggunakan potongan aksial citra CT Thorax klinis riil (`normal-ct-chest.jpeg`) sebagai *ground truth* $f$:
 - **Sumber Citra & Lisensi:** Potongan CT Thorax normal diperoleh dari repositori terbuka pencitraan medis (*Open Medical Imaging Archive*) dengan lisensi Creative Commons (CC BY-NC 4.0).
-- **Dimensi Citra Sumber:** Berkas asli berukuran $1524 \\times 1524$ piksel (format grayscale 8-bit).
-- **Resampling Spasial:** Citra di-resample ke resolusi standar $256 \\times 256$ piksel (faktor skala 5.95) menggunakan interpolasi area (`cv2.INTER_AREA`) untuk efisiensi komputasi transformasi Radon dan FBP.
-- **Circular Reconstruction Masking:** Area di luar radius lingkaran rekonstruksi $r = \\frac{N}{2} - 2 = 126\\text{ px}$ dinolkan ($f = 0$). Sebanyak 508 piksel tepi tubuh/meja pemindai (1.9% dari total area tubuh) dinolkan untuk mencegah timbulnya peringatan batas rekonstruksi *out-of-circle* pada `skimage.transform.radon`.
+- **Dimensi Citra Sumber:** Berkas asli berukuran $1524 \times 1524$ piksel (format grayscale 8-bit).
+- **Resampling Spasial:** Citra di-resample ke resolusi standar $256 \times 256$ piksel (faktor skala 5.95) menggunakan interpolasi area (`cv2.INTER_AREA`) untuk efisiensi komputasi transformasi Radon dan FBP.
+- **Circular Reconstruction Masking:** Area di luar radius lingkaran rekonstruksi $r = \frac{N}{2} - 2 = 126\text{ px}$ dinolkan ($f = 0$). Sebanyak 508 piksel tepi tubuh/meja pemindai (1.9% dari total area tubuh) dinolkan untuk mencegah timbulnya peringatan batas rekonstruksi *out-of-circle* pada `skimage.transform.radon`.
 - **Karakteristik Intensitas Ground Truth:** Sebanyak 59.3% piksel bernilai 0 (latar belakang udara dan parenkim paru hipodens), sedangkan 1.56% piksel mencapai saturasi maksimum 255 (korteks tulang padat).
 
 ---
@@ -59,43 +59,43 @@ flowchart LR
 ```
 
 ### A. Proyeksi Maju (Transformasi Radon)
-Atenuasi sinar-X yang menembus jaringan tubuh sepanjang garis berkas dengan sudut $\\theta$ dan jarak detektor $s$ dimodelkan melalui Transformasi Radon:
+Atenuasi sinar-X yang menembus jaringan tubuh sepanjang garis berkas dengan sudut $\theta$ dan jarak detektor $s$ dimodelkan melalui Transformasi Radon:
 
-$$p(s, \\theta) = \\mathcal{R}[f](s, \\theta) = \\int_{-\\infty}^{\\infty} \\int_{-\\infty}^{\\infty} f(x, y) \\, \\delta(x \\cos\\theta + y \\sin\\theta - s) \\, dx \\, dy$$
+$$p(s, \theta) = \mathcal{R}[f](s, \theta) = \int_{-\infty}^{\infty} \int_{-\infty}^{\infty} f(x, y) \, \delta(x \cos\theta + y \sin\theta - s) \, dx \, dy$$
 
-Pada pemindaian *sparse-view*, sudut proyeksi diambil sangat jarang, yaitu hanya $N_\\theta = 40$ sudut sepanjang interval $[0, \\pi)$:
+Pada pemindaian *sparse-view*, sudut proyeksi diambil sangat jarang, yaitu hanya $N_\theta = 40$ sudut sepanjang interval $[0, \pi)$:
 
-$$\\theta_k = \\frac{k \\pi}{40}, \\quad k = 0, 1, \\dots, 39$$
+$$\theta_k = \frac{k \pi}{40}, \quad k = 0, 1, \dots, 39$$
 
-Jumlah sudut ini jauh di bawah kriteria sampling Nyquist-Shannon angular ($N_\\theta \\ge \\frac{\\pi}{2} N_{\\text{detektor}}$), yang secara matematis menjamin timbulnya galat rekonstruksi berarah (*aliasing streaking*).
+Jumlah sudut ini jauh di bawah kriteria sampling Nyquist-Shannon angular ($N_\theta \ge \frac{\pi}{2} N_{\text{detektor}}$), yang secara matematis menjamin timbulnya galat rekonstruksi berarah (*aliasing streaking*).
 
 ### B. Fisika Derau pada Domain Sinogram
-1. **Derau Kuantum Foton (Poisson):** Pencacahan foton sinar-X yang tiba di detektor mengikuti distribusi Poisson dengan parameter dosis rendah ($D_{\\text{foton}} = 5.0$):
-   $$s_{\\text{foton}}(s, \\theta) = \\frac{\\text{Poisson}\\left( \\max(0, p(s, \\theta)) \\cdot D_{\\text{foton}} \\right)}{D_{\\text{foton}}}$$
-2. **Derau Elektronik Detektor (Gaussian):** Fluktuasi termal dan derau baca elektronik sensor dimodelkan sebagai derau putih Gaussian aditif ($\\sigma_e = 50.0$):
-   $$s_{\\text{noisy}}(s, \\theta) = s_{\\text{foton}}(s, \\theta) + \\mathcal{N}(0, \\sigma_e^2)$$
+1. **Derau Kuantum Foton (Poisson):** Pencacahan foton sinar-X yang tiba di detektor mengikuti distribusi Poisson dengan parameter dosis rendah ($D_{\text{foton}} = 5.0$):
+   $$s_{\text{foton}}(s, \theta) = \frac{\text{Poisson}\left( \max(0, p(s, \theta)) \cdot D_{\text{foton}} \right)}{D_{\text{foton}}}$$
+2. **Derau Elektronik Detektor (Gaussian):** Fluktuasi termal dan derau baca elektronik sensor dimodelkan sebagai derau putih Gaussian aditif ($\sigma_e = 50.0$):
+   $$s_{\text{noisy}}(s, \theta) = s_{\text{foton}}(s, \theta) + \mathcal{N}(0, \sigma_e^2)$$
 
 ### C. Rekonstruksi FBP (Filtered Back-Projection)
-Citra rekonstruksi awal $\\hat{f}_{\\text{pacs}}$ diperoleh dengan mengaplikasikan *Ramp Filter* (Ram-Lak) $|\\omega|$ pada domain frekuensi sinogram lalu memproyeksikannya kembali (*back-projection*):
+Citra rekonstruksi awal $\hat{f}_{\text{pacs}}$ diperoleh dengan mengaplikasikan *Ramp Filter* (Ram-Lak) $|\omega|$ pada domain frekuensi sinogram lalu memproyeksikannya kembali (*back-projection*):
 
-$$\\hat{f}_{\\text{pacs}}(x, y) = \\mathcal{R}^{-1}\\{s_{\\text{noisy}}\\} = \\int_0^\\pi \\left( s_{\\text{noisy}}(\\cdot, \\theta) * h_{\\text{ramp}} \\right)(x \\cos\\theta + y \\sin\\theta) \\, d\\theta$$
+$$\hat{f}_{\text{pacs}}(x, y) = \mathcal{R}^{-1}\{s_{\text{noisy}}\} = \int_0^\pi \left( s_{\text{noisy}}(\cdot, \theta) * h_{\text{ramp}} \right)(x \cos\theta + y \sin\theta) \, d\theta$$
 
 Pada lapang paru, dekomposisi galat rekonstruksi FBP menghasilkan:
-- **Galat FBP murni tanpa derau (streak sparse-view + blur):** Simpangan baku $\\sigma = 17.01$ tingkat abu.
-- **Derau murni (Poisson + Gaussian):** Simpangan baku $\\sigma = 7.15$ tingkat abu (Poisson saja: 5.20, Gaussian saja: 4.95).
+- **Galat FBP murni tanpa derau (streak sparse-view + blur):** Simpangan baku $\sigma = 17.01$ tingkat abu.
+- **Derau murni (Poisson + Gaussian):** Simpangan baku $\sigma = 7.15$ tingkat abu (Poisson saja: 5.20, Gaussian saja: 4.95).
 
 ### D. Penurunan Kontras Lokal (Windowing Defisit)
 Untuk meniru penyetelan *window width* dan *window level* yang tidak memadai pada stasiun akuisisi, kontras lokal citra diturunkan dengan menarik tiap piksel ke arah rerata lokal sekitarnya:
 
-$$g(x, y) = \\alpha \\, \\hat{f}_{\\text{pacs}}(x, y) + (1 - \\alpha) \\, [\\hat{f}_{\\text{pacs}} * G_{\\sigma_{\\text{lokal}}}](x, y)$$
+$$g(x, y) = \alpha \, \hat{f}_{\text{pacs}}(x, y) + (1 - \alpha) \, [\hat{f}_{\text{pacs}} * G_{\sigma_{\text{lokal}}}](x, y)$$
 
-dengan $\\alpha = 0.45$ dan radius sebaran Gaussian $\\sigma_{\\text{lokal}} = 9.0\\text{ px}$.
+dengan $\alpha = 0.45$ dan radius sebaran Gaussian $\sigma_{\text{lokal}} = 9.0\text{ px}$.
 
 Dalam domain frekuensi Fourier 2D, fungsi transfer degradasi kontras ini memiliki formulasi eksak:
 
-$$H_{\\text{deg}}(\\nu) = \\alpha + (1 - \\alpha) \\exp\\left( -2\\pi^2 \\sigma_{\\text{lokal}}^2 \\nu^2 \\right)$$
+$$H_{\text{deg}}(\nu) = \alpha + (1 - \alpha) \exp\left( -2\pi^2 \sigma_{\text{lokal}}^2 \nu^2 \right)$$
 
-Pada frekuensi nol (DC), $H_{\\text{deg}}(0) = 1.0$ (kecerahan global tetap terjaga). Namun saat frekuensi spasial $\\nu$ meningkat, respons meluruh secara asimtotik mendekati nilai $\\alpha = 0.45$, menyebabkan kontur batas organ dan detail vaskular mengalami pelemahan amplitudo hingga lebih dari 50%.
+Pada frekuensi nol (DC), $H_{\text{deg}}(0) = 1.0$ (kecerahan global tetap terjaga). Namun saat frekuensi spasial $\nu$ meningkat, respons meluruh secara asimtotik mendekati nilai $\alpha = 0.45$, menyebabkan kontur batas organ dan detail vaskular mengalami pelemahan amplitudo hingga lebih dari 50%.
 
 ---
 
@@ -156,28 +156,28 @@ Contrast Limited Adaptive Histogram Equalization (CLAHE) adalah metode standar u
 ### Tahap 1: Non-Local Means (NLM) Denoising
 Metode Non-Local Means bekerja dengan mengeksploitasi redundansi struktural citra medis, menghitung estimasi intensitas berdasarkan kesamaan patch (*patch similarity*):
 
-$$u(p) = \\frac{1}{Z(p)} \\sum_{q \\in \\Omega} w(p, q) \\, v(q)$$
+$$u(p) = \frac{1}{Z(p)} \sum_{q \in \Omega} w(p, q) \, v(q)$$
 
 Pada skrip `uts.py`, tahap ini diimplementasikan menggunakan fungsi `cv2.fastNlMeansDenoising` pada citra uint8 dengan parameter:
 - Kekuatan penapisan: $h = 12$
-- Ukuran jendela template / patch: $7 \\times 7$ (`templateWindowSize=7`)
-- Ukuran jendela pencarian: $21 \\times 21$ (`searchWindowSize=21`)
+- Ukuran jendela template / patch: $7 \times 7$ (`templateWindowSize=7`)
+- Ukuran jendela pencarian: $21 \times 21$ (`searchWindowSize=21`)
 
 Tahap ini secara selektif meredam fluktuasi butiran kuantum tanpa mengaburkan dinding bronkovaskular.
 
 ### Tahap 2: Total Variation Chambolle (TV) Denoising
 Untuk meratakan pola garis-garis *streak* berdensitas rendah yang memotong parenkim paru, diterapkan algoritma Total Variation berbasis formulasi regularisasi Antonin Chambolle:
 
-$$\\min_u \\left\\{ \\int_\\Omega |\\nabla u| + \\frac{1}{2 \\lambda} \\int_\\Omega (u - g)^2 \\right\\}$$
+$$\min_u \left\{ \int_\Omega |\nabla u| + \frac{1}{2 \lambda} \int_\Omega (u - g)^2 \right\}$$
 
-Regularisasi norma $L_1$ pada gradien $|\\nabla u|$ memiliki sifat meratakan osilasi bergradien landai pada area homogen (lapang paru), sementara batas bergradien curam antara dinding dada dan rongga udara dipertahankan tajam. Bobot TV disetel pada $\\lambda = 0.05$ (skala citra dinormalisasi $[0, 1]$).
+Regularisasi norma $L_1$ pada gradien $|\nabla u|$ memiliki sifat meratakan osilasi bergradien landai pada area homogen (lapang paru), sementara batas bergradien curam antara dinding dada dan rongga udara dipertahankan tajam. Bobot TV disetel pada $\lambda = 0.05$ (skala citra dinormalisasi $[0, 1]$).
 
 ### Tahap 3: High-Frequency Emphasis (HFE) Domain Frekuensi
-Setelah kanvas citra bersih dari derau butiran dan streak, penurunan kontras lokal dikoreksi di domain frekuensi Fourier 2D. Filter HFE dirancang sebagai aproksimasi invers teratur dari degradasi $H_{\\text{deg}}(\\nu)$:
+Setelah kanvas citra bersih dari derau butiran dan streak, penurunan kontras lokal dikoreksi di domain frekuensi Fourier 2D. Filter HFE dirancang sebagai aproksimasi invers teratur dari degradasi $H_{\text{deg}}(\nu)$:
 
-$$H_{\\text{HFE}}(\\nu) = 1.0 + k \\cdot \\left[ 1.0 - \\exp\\left( -2\\pi^2 \\sigma_{\\text{HFE}}^2 \\nu^2 \\right) \\right]$$
+$$H_{\text{HFE}}(\nu) = 1.0 + k \cdot \left[ 1.0 - \exp\left( -2\pi^2 \sigma_{\text{HFE}}^2 \nu^2 \right) \right]$$
 
-Dengan parameter $\\sigma_{\\text{HFE}} = 9.0\\text{ px}$ dan penguatan gain $k = 1.2$ (mendekati rasio invers teoritis $\\frac{1 - \\alpha}{\\alpha} = \\frac{0.55}{0.45} \\approx 1.22$).
+Dengan parameter $\sigma_{\text{HFE}} = 9.0\text{ px}$ dan penguatan gain $k = 1.2$ (mendekati rasio invers teoritis $\frac{1 - \alpha}{\alpha} = \frac{0.55}{0.45} \approx 1.22$).
 
 ```python
 def filter_hfe_frekuensi(img, sigma=SIGMA_HFE, gain=GAIN_HFE):
@@ -191,12 +191,12 @@ def filter_hfe_frekuensi(img, sigma=SIGMA_HFE, gain=GAIN_HFE):
     return np.clip(hasil, 0, 255).astype(np.float32)
 ```
 
-Perkalian spektrum $H_{\\text{deg}}(\\nu) \\times H_{\\text{HFE}}(\\nu)$ memiliki nilai puncak yang terkendali pada $1.16$ di frekuensi $\\nu = 0.021\\text{ siklus/px}$, mencegah osilasi frekuensi tinggi berlebih.
+Perkalian spektrum $H_{\text{deg}}(\nu) \times H_{\text{HFE}}(\nu)$ memiliki nilai puncak yang terkendali pada $1.16$ di frekuensi $\nu = 0.021\text{ siklus/px}$, mencegah osilasi frekuensi tinggi berlebih.
 
 ### Tahap 4: Penajaman Korteks Tulang (Laplacian Sharpening)
-Tahap akhir mengembalikan ketajaman korteks tulang (sternum, iga, korpus vertebra) menggunakan konvolusi kernel Laplacian 3×3 dengan bobot $\\kappa = 0.5$:
+Tahap akhir mengembalikan ketajaman korteks tulang (sternum, iga, korpus vertebra) menggunakan konvolusi kernel Laplacian 3×3 dengan bobot $\kappa = 0.5$:
 
-$$K_{\\text{lap}} = \\begin{bmatrix} 0 & -\\kappa & 0 \\\\ -\\kappa & 1 + 4\\kappa & -\\kappa \\\\ 0 & -\\kappa & 0 \\end{bmatrix} = \\begin{bmatrix} 0 & -0.5 & 0 \\\\ -0.5 & 3.0 & -0.5 \\\\ 0 & -0.5 & 0 \\end{bmatrix}$$
+$$K_{\text{lap}} = \begin{bmatrix} 0 & -\kappa & 0 \\ -\kappa & 1 + 4\kappa & -\kappa \\ 0 & -\kappa & 0 \end{bmatrix} = \begin{bmatrix} 0 & -0.5 & 0 \\ -0.5 & 3.0 & -0.5 \\ 0 & -0.5 & 0 \end{bmatrix}$$
 
 ---
 
@@ -206,9 +206,9 @@ $$K_{\\text{lap}} = \\begin{bmatrix} 0 & -\\kappa & 0 \\\\ -\\kappa & 1 + 4\\kap
 Tiap indikator dipilih untuk merepresentasikan aspek diagnostik tertentu:
 1. **PSNR (Peak Signal-to-Noise Ratio):** Mengukur penurunan galat kuadrat rerata (MSE) terhadap ground truth secara logaritmik.
 2. **SSIM (Structural Similarity Index):** Menilai integritas luminansi, kontras, dan struktur anatomis secara bersamaan.
-3. **Rasio Kontras RMS pada ROI:** Dihitung pada jendela batas hilum paru-jantung ($y: 125\\text{--}149, x: 125\\text{--}149$). Rasio $1.00$ menunjukkan pemulihan kontras lokal yang presisi tanpa *under-enhancement* (< 0.85) atau *over-enhancement* (> 1.15).
+3. **Rasio Kontras RMS pada ROI:** Dihitung pada jendela batas hilum paru-jantung ($y: 125\text{--}149, x: 125\text{--}149$). Rasio $1.00$ menunjukkan pemulihan kontras lokal yang presisi tanpa *under-enhancement* (< 0.85) atau *over-enhancement* (> 1.15).
 4. **Galat Streak di Paru (std):** Mengukur simpangan baku galat $(hasil - f)$ pada piksel lapang paru homogen (`mask_paru_homogen`, 11.066 piksel).
-5. **Rasio Ketajaman Tepi:** Dihitung dari varians filter Laplacian (dihaluskan Gaussian $\\sigma=0.8$ agar tidak membiaskan derau sebagai ketajaman semu).
+5. **Rasio Ketajaman Tepi:** Dihitung dari varians filter Laplacian (dihaluskan Gaussian $\sigma=0.8$ agar tidak membiaskan derau sebagai ketajaman semu).
 6. **Kontras Struktur Pembuluh:** Rasio selisih intensitas struktur vaskular terhadap parenkim sekitarnya.
 
 ### Transparansi Ambang Rubrik: Ambang Awal vs Ambang Rekalibrasi Citra Riil
@@ -219,12 +219,12 @@ Oleh karena itu, setelah uji pendahuluan pada citra riil, ditetapkan set ambang 
 <!-- prettier-ignore -->
 | Metrik Evaluasi | Nilai Terdegradasi | Nilai Hasil Restorasi | Ambang Awal (Phantom) | Status (Phantom) | Ambang Kalibrasi Citra Riil | Status (Citra Riil) |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| **PSNR vs Ground Truth (dB)** | 19.32 | **24.84** | $\\ge 28.0 \\; / \\; \\ge 32.0$ | **BELUM** | $\\ge 22.0 \\; / \\; \\ge 24.5$ | **IDEAL** |
-| **SSIM vs Ground Truth** | 0.435 | **0.699** | $\\ge 0.70 \\; / \\; \\ge 0.85$ | **BELUM** | $\\ge 0.60 \\; / \\; \\ge 0.68$ | **IDEAL** |
-| **Rasio Kontras Lokal (ROI)** | 0.57 | **0.99** | $0.85\\text{--}1.15 \\; / \\; 0.95\\text{--}1.05$ | **IDEAL** | $0.85\\text{--}1.15 \\; / \\; 0.95\\text{--}1.05$ | **IDEAL** |
-| **Galat Streak di Paru (std)** | 11.09 | **2.36** | $\\le 4.0 \\; / \\; \\le 2.0$ | **MINIMUM** | $\\le 4.0 \\; / \\; \\le 2.5$ | **IDEAL** |
-| **Rasio Ketajaman Tepi\*** | 0.24 | **0.59** | $0.50\\text{--}1.30 \\; / \\; 0.80\\text{--}1.20$ | **MINIMUM** | $0.50\\text{--}1.30 \\; / \\; 0.60\\text{--}1.20$ | **MINIMUM** |
-| **Rasio Kontras Pembuluh** | 0.71 | **1.03** | $\\ge 0.50 \\; / \\; \\ge 0.80$ | **IDEAL** | $\\ge 0.50 \\; / \\; \\ge 0.80$ | **IDEAL** |
+| **PSNR vs Ground Truth (dB)** | 19.32 | **24.84** | $\ge 28.0 \; / \; \ge 32.0$ | **BELUM** | $\ge 22.0 \; / \; \ge 24.5$ | **IDEAL** |
+| **SSIM vs Ground Truth** | 0.435 | **0.699** | $\ge 0.70 \; / \; \ge 0.85$ | **BELUM** | $\ge 0.60 \; / \; \ge 0.68$ | **IDEAL** |
+| **Rasio Kontras Lokal (ROI)** | 0.57 | **0.99** | $0.85\text{--}1.15 \; / \; 0.95\text{--}1.05$ | **IDEAL** | $0.85\text{--}1.15 \; / \; 0.95\text{--}1.05$ | **IDEAL** |
+| **Galat Streak di Paru (std)** | 11.09 | **2.36** | $\le 4.0 \; / \; \le 2.0$ | **MINIMUM** | $\le 4.0 \; / \; \le 2.5$ | **IDEAL** |
+| **Rasio Ketajaman Tepi\*** | 0.24 | **0.59** | $0.50\text{--}1.30 \; / \; 0.80\text{--}1.20$ | **MINIMUM** | $0.50\text{--}1.30 \; / \; 0.60\text{--}1.20$ | **MINIMUM** |
+| **Rasio Kontras Pembuluh** | 0.71 | **1.03** | $\ge 0.50 \; / \; \ge 0.80$ | **IDEAL** | $\ge 0.50 \; / \; \ge 0.80$ | **IDEAL** |
 | **Ringkasan Predikat Status** | - | - | - | **IDEAL 2, MIN 2, BELUM 2** | - | **IDEAL 5, MIN 1, BELUM 0** |
 
 > **Analisis Penetapan Ambang:**  
@@ -246,7 +246,7 @@ Untuk memverifikasi kontribusi tiap komponen dalam arsitektur restorasi, dilakuk
 | Tanpa TV (Hanya NLM > HFE > Sharpen) | 24.19 | 0.693 | 2.79 | 1.03 | 1.04 | 1.03 | 21.90 |
 | Tanpa Penajaman Laplacian | 23.76 | 0.674 | 2.36 | 0.94 | 0.25 | 1.02 | 21.15 |
 | Denoise Lemah (NLM h=6, TV=0.02) | 22.48 | 0.681 | 2.60 | 1.02 | 1.36 | 1.03 | 20.28 |
-| Filter Invers Eksak $1/H_{\\text{deg}}$ (bukan HFE) | 24.87 | 0.597 | 3.20 | 0.97 | 0.60 | 0.97 | 22.60 |
+| Filter Invers Eksak $1/H_{\text{deg}}$ (bukan HFE) | 24.87 | 0.597 | 3.20 | 0.97 | 0.60 | 0.97 | 22.60 |
 | Kontras Dulu (Parameter Denoise Disetel Terpisah) | 24.63 | 0.608 | 1.51 | 0.96 | 0.57 | 0.98 | 22.23 |
 | Kontras Dulu (Parameter Sama dengan Utama) | 22.67 | 0.599 | 1.43 | 1.01 | 1.30 | 0.99 | 20.49 |
 | CLAHE Penuh (clip=2.0, tile=8×8) | 17.11 | 0.341 | 16.19 | 0.58 | 0.25 | 0.83 | 15.16 |
@@ -255,7 +255,7 @@ Untuk memverifikasi kontribusi tiap komponen dalam arsitektur restorasi, dilakuk
 
 ### Temuan Utama Studi Ablasi:
 1. **Peran Vital HFE:** Menghilangkan HFE membuat PSNR stagnan di 19.48 dB (hanya naik 0.16 dB dari citra terdegradasi), menunjukkan bahwa peredaman derau tanpa restorasi fungsi transfer modulasi frekuensi tidak memadai.
-2. **Perilaku Filter Invers Eksak:** Filter invers analitik $1/H_{\\text{deg}}$ mencapai PSNR 24.87 dB (sedikit melampaui HFE 24.84 dB), namun nilai SSIM anjlok ke 0.597 akibat amplifikasi riak frekuensi tinggi di sekitar diskontinuitas batas organ.
+2. **Perilaku Filter Invers Eksak:** Filter invers analitik $1/H_{\text{deg}}$ mencapai PSNR 24.87 dB (sedikit melampaui HFE 24.84 dB), namun nilai SSIM anjlok ke 0.597 akibat amplifikasi riak frekuensi tinggi di sekitar diskontinuitas batas organ.
 3. **Kegagalan CLAHE:** CLAHE memperparah galat streak hingga mencapai standar deviasi 16.19, membuktikan ketidakcocokannya untuk citra tomografi dengan cacat *sparse-view*.
 
 ---
@@ -265,7 +265,7 @@ Untuk memverifikasi kontribusi tiap komponen dalam arsitektur restorasi, dilakuk
 ### A. Realitas Mask Pembuluh Global vs Pembuluh Darah Halus
 Pada evaluasi rubrik awal, metrik `pembuluh` mencatat rasio 1.03 (status IDEAL). Namun, analisis mendalam pada topologi piksel `mask_pembuluh` (2.264 piksel) mengungkap fakta penting:
 - Sebanyak **94% piksel** berada pada kurva panjang (> 60 piksel).
-- Sebanyak **98% piksel** terletak dalam jarak $\\le 3\\text{ px}$ dari struktur anatomis besar (kontur batas lateral mediastinum, jantung, dan dinding dada anterior).
+- Sebanyak **98% piksel** terletak dalam jarak $\le 3\text{ px}$ dari struktur anatomis besar (kontur batas lateral mediastinum, jantung, dan dinding dada anterior).
 
 Akibatnya, metrik global ini sebagian besar merefleksikan kontur batas organ besar, sehingga seluruh 70 setelan tuning menghasilkan rasio semu berkisar antara 0.98 s.d. 1.03.
 
@@ -284,7 +284,7 @@ Untuk menguji pelestarian vaskular intrapulmonal yang sesungguhnya, dilakukan de
 
 > **Temuan Kritis Trade-off:**  
 > Pipeline utama berhasil menjaga 2 pembuluh cabang yang relatif lebih besar (luas 26-32 px, rasio 0.96), tetapi **menghapus 3 pembuluh mikro** (luas 2-21 px, rasio turun ke 0.01 - 0.16).  
-> Varian *denoise lemah* ($h=6, \\text{TV}=0.02$) mampu melestarikan median kontras pembuluh kecil hingga 0.82 (3 dari 5 pembuluh lolos $\\ge 0.50$), namun menyisakan galat streak paru lebih tinggi dan menurunkan PSNR ke 22.50 dB. Hal ini menegaskan adanya **trade-off tak terelakkan (*fundamental trade-off*)** antara eliminasi streak vs preservasi struktur vaskular mikro.
+> Varian *denoise lemah* ($h=6, \text{TV}=0.02$) mampu melestarikan median kontras pembuluh kecil hingga 0.82 (3 dari 5 pembuluh lolos $\ge 0.50$), namun menyisakan galat streak paru lebih tinggi dan menurunkan PSNR ke 22.50 dB. Hal ini menegaskan adanya **trade-off tak terelakkan (*fundamental trade-off*)** antara eliminasi streak vs preservasi struktur vaskular mikro.
 
 ### B. Sebaran Galat Regional
 Klaim restorasi tidak boleh digeneralisasi ke seluruh kanvas citra karena metrik streak hanya diukur di parenkim paru datar. Pengukuran galat RMS terhadap ground truth pada berbagai wilayah anatomi menunjukkan:
@@ -296,7 +296,7 @@ Klaim restorasi tidak boleh digeneralisasi ke seluruh kanvas citra karena metrik
 Artinya, pembersihan streak sangat efektif di dalam rongga paru, tetapi residu galat rekonstruksi FBP masih tertinggal pada jaringan lunak dan batas meja pemindai.
 
 ### C. Uji Kontrol Negatif & Sifat Non-Blind
-- **Sifat Non-Blind:** Model koreksi HFE bersifat terarah (*non-blind*), menggunakan parameter $\\sigma = 9.0$ dan gain $k = 1.2$ yang disesuaikan secara langsung dengan parameter degradasi fisik $\\alpha = 0.45$ dan $\\sigma = 9.0$.
+- **Sifat Non-Blind:** Model koreksi HFE bersifat terarah (*non-blind*), menggunakan parameter $\sigma = 9.0$ dan gain $k = 1.2$ yang disesuaikan secara langsung dengan parameter degradasi fisik $\alpha = 0.45$ dan $\sigma = 9.0$.
 - **Uji Kontrol Negatif:** Jika pipeline utama diaplikasikan pada citra CT bersih yang tidak terdegradasi, PSNR anjlok dari sempurna menjadi **19.47 dB** dan rasio ketajaman melonjak menjadi **2.27**. Hal ini menegaskan bahwa pipeline ini dirancang khusus untuk memulihkan citra berdefisit kontras dan tidak boleh diterapkan secara membabi-buta pada citra normal.
 
 ---
@@ -309,7 +309,7 @@ Perbandingan berdampingan (*side-by-side*) antara citra CT Thorax sebelum restor
 ![Komparasi Sebelum vs Sesudah Restorasi](./komparasi_before_after.png)
 
 ### 2. Citra Sebelum Restorasi (Input Terdegradasi PACS)
-Citra resolusi $256 \\times 256$ piksel yang diterima sistem PACS dengan artefak garis tajam (*streaking*), derau Poisson-Gaussian, dan kontras lokal rendah:
+Citra resolusi $256 \times 256$ piksel yang diterima sistem PACS dengan artefak garis tajam (*streaking*), derau Poisson-Gaussian, dan kontras lokal rendah:
 
 ![Citra Sebelum Restorasi (Input Terdegradasi)](./citra_terdegradasi.png)
 
@@ -319,7 +319,7 @@ Citra terestorasi setelah melalui alur NLM > TV > HFE > Sharpen dengan reduksi s
 ![Hasil Akhir Restorasi Citra CT Scan Thorax](./hasil_restorasi.png)
 
 ### 4. Citra Ground Truth Asli (Referensi)
-Citra klinis resolusi $256 \\times 256$ piksel acuan ideal (`normal-ct-chest.jpeg`) sebelum proses simulasi degradasi:
+Citra klinis resolusi $256 \times 256$ piksel acuan ideal (`normal-ct-chest.jpeg`) sebelum proses simulasi degradasi:
 
 ![Citra Ground Truth Asli](./ground_truth.png)
 
@@ -329,17 +329,17 @@ Ilustrasi alur degradasi akuisisi tomografi: dari citra CT ground truth, transfo
 ![Pembuatan Sampel Citra Terdegradasi](./pembuatan_sampel_degradasi.png)
 
 ### 6. Tahapan Pemrosesan Citra Digital
-Evolusi citra di setiap tahap penapisan: citra terdegradasi awal $\\rightarrow$ peredaman derau NLM $\\rightarrow$ perataan streak TV Chambolle $\\rightarrow$ kompensasi kontras HFE Fourier 2D $\\rightarrow$ penajaman korteks tulang:
+Evolusi citra di setiap tahap penapisan: citra terdegradasi awal $\rightarrow$ peredaman derau NLM $\rightarrow$ perataan streak TV Chambolle $\rightarrow$ kompensasi kontras HFE Fourier 2D $\rightarrow$ penajaman korteks tulang:
 
 ![Tahapan Transformasi Citra Digital](./tahapan_proses.png)
 
 ### 7. Komparasi Detail 3×3: Ground Truth vs Degradasi vs Restorasi
-Panel evaluasi 3 × 3 memuat perbandingan kanvas utuh, pembesaran ROI pada batas hilum paru-jantung (kotak kuning), peta galat absolut $|\\text{Citra} - \\text{GT}|$, dan kurva histogram densitas tubuh:
+Panel evaluasi 3 × 3 memuat perbandingan kanvas utuh, pembesaran ROI pada batas hilum paru-jantung (kotak kuning), peta galat absolut $|\text{Citra} - \text{GT}|$, dan kurva histogram densitas tubuh:
 
 ![Komparasi Detail Ground Truth vs Degradasi vs Restorasi](./komparasi_gt_degradasi_hasil.png)
 
 ### 8. Analisis Respons Filter Frekuensi HFE
-Profil kurva respons degradasi $H_{\\text{deg}}(\\nu)$, kurva penapis $H_{\\text{HFE}}(\\nu)$, serta produk transfer gabungan $H_{\\text{deg}} \\times H_{\\text{HFE}}$:
+Profil kurva respons degradasi $H_{\text{deg}}(\nu)$, kurva penapis $H_{\text{HFE}}(\nu)$, serta produk transfer gabungan $H_{\text{deg}} \times H_{\text{HFE}}$:
 
 ![Respons Filter Frekuensi](./respons_frekuensi.png)
 
@@ -353,7 +353,7 @@ Visualisasi sebaran 70 kombinasi parameter NLM dan TV. Sumbu X merepresentasikan
 ## 9. Keterbatasan & Kesimpulan
 
 ### Keterbatasan Studi
-1. **Validasi Komputasional Tunggal:** Pengujian dilakukan pada satu irisan CT klinis normal beresolusi $256 \\times 256$ piksel tanpa penilaian ganda oleh dokter spesialis radiologi, sehingga hasil tidak boleh diklaim siap untuk diagnosis klinis definitif.
+1. **Validasi Komputasional Tunggal:** Pengujian dilakukan pada satu irisan CT klinis normal beresolusi $256 \times 256$ piksel tanpa penilaian ganda oleh dokter spesialis radiologi, sehingga hasil tidak boleh diklaim siap untuk diagnosis klinis definitif.
 2. **Restorasi Non-Blind:** Filter HFE bergantung pada estimasi parameter pelemahan kontras lokal yang mendekati nilai degradasi riil.
 3. **Pelemahan Pembuluh Mikro:** Filter NLM dan TV meratakan variasi intensitas rendah di parenkim paru, mengorbankan pembuluh darah halus berdiameter 1-2 piksel.
 4. **Residu Galat di Luar Paru:** Peredaman streak sangat dominan di parenkim paru (RMS 3.13), namun residu galat pada jaringan lunak mediastinum (RMS 11.01) dan meja pemindai (RMS 22.68) masih ada.
