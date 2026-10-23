@@ -30,7 +30,8 @@ Meningkatkan kualitas inspeksi visual anatomi toraks (membedakan parenkim paru, 
 
 ### Spesifikasi Sampel Input & Pra-Pemrosesan
 Sesuai panduan tugas ("pilih atau buat sampel"), studi kasus ini menggunakan potongan aksial citra CT Thorax klinis riil (`normal-ct-chest.jpeg`) sebagai *ground truth* $f$:
-- **Sumber Citra & Lisensi:** Potongan CT Thorax normal diperoleh dari repositori terbuka pencitraan medis (*Open Medical Imaging Archive*) dengan lisensi Creative Commons (CC BY-NC 4.0).
+- **Sumber Citra & Lisensi:** Satu irisan aksial dari kasus *Normal CT chest* oleh Dr. Andrew Dixon di Radiopaedia.org (rID 36676), [radiopaedia.org/cases/normal-ct-chest](https://radiopaedia.org/cases/normal-ct-chest), DOI [10.53347/rID-36676](https://doi.org/10.53347/rID-36676). Konten kasus Radiopaedia berlisensi [CC BY-NC-SA 3.0](https://creativecommons.org/licenses/by-nc-sa/3.0/). Karena itu citra turunan di artikel ini (terdegradasi dan hasil restorasi) juga dibagikan di bawah lisensi yang sama, untuk keperluan non-komersial.
+- **Penempatan Berkas:** Simpan irisan sebagai `src/normal-ct-chest.jpeg`. Bila berkas tidak ditemukan, skrip mencetak peringatan lalu memakai phantom sintetis, dan angka di artikel ini tidak lagi berlaku.
 - **Dimensi Citra Sumber:** Berkas asli berukuran $1524 \times 1524$ piksel (format grayscale 8-bit).
 - **Resampling Spasial:** Citra di-resample ke resolusi standar $256 \times 256$ piksel (faktor skala 5.95) menggunakan interpolasi area (`cv2.INTER_AREA`) untuk efisiensi komputasi transformasi Radon dan FBP.
 - **Circular Reconstruction Masking:** Area di luar radius lingkaran rekonstruksi $r = \frac{N}{2} - 2 = 126\text{ px}$ dinolkan ($f = 0$). Sebanyak 508 piksel tepi tubuh/meja pemindai (1.9% dari total area tubuh) dinolkan untuk mencegah timbulnya peringatan batas rekonstruksi *out-of-circle* pada `skimage.transform.radon`.
@@ -67,7 +68,7 @@ Pada pemindaian *sparse-view*, sudut proyeksi diambil sangat jarang, yaitu hanya
 
 $$\theta_k = \frac{k \pi}{40}, \quad k = 0, 1, \dots, 39$$
 
-Jumlah sudut ini jauh di bawah kriteria sampling Nyquist-Shannon angular ($N_\theta \ge \frac{\pi}{2} N_{\text{detektor}}$), yang secara matematis menjamin timbulnya galat rekonstruksi berarah (*aliasing streaking*).
+Jumlah sudut ini jauh di bawah kriteria sampling Nyquist-Shannon angular ($N_\theta \ge \frac{\pi}{2} N_{\text{detektor}}$), sehingga rekonstruksi FBP memunculkan galat berarah (*aliasing streaking*).
 
 ### B. Fisika Derau pada Domain Sinogram
 1. **Derau Kuantum Foton (Poisson):** Pencacahan foton sinar-X yang tiba di detektor mengikuti distribusi Poisson dengan parameter dosis rendah ($D_{\text{foton}} = 5.0$):
@@ -141,13 +142,13 @@ Pertanyaan desain arsitektur mendasar: *mengapa tahap reduksi derau (NLM dan TV)
 
 Filter HFE dan kernel penajaman Laplacian bekerja dengan **menguatkan frekuensi spasial tinggi**. Jika koreksi kontras dijalankan di awal:
 1. Sisa derau butiran Poisson-Gaussian akan ikut teramplifikasi secara drastis bersama sinyal detail.
-2. Meskipun varian *kontras-dulu* mampu menekan nilai simpangan baku streak (pada tabel ablasi: streak 1.51 vs 2.36), peningkatan kontras di awal mengubah profil gradien lokal sehingga pemfilteran TV dan NLM setelahnya memicu distorsi geometris jaringan. Hal ini tercermin nyata dari skor kemiripan struktural: **urutan denoise-dulu menghasilkan SSIM yang jauh lebih tinggi (0.699)** dibanding urutan kontras-dulu (**0.608** dan **0.599**).
+2. Urutan kontras-dulu **bukan** gagal membersihkan streak. Dua varian kontras-dulu di tabel ablasi justru memberi streak paru lebih rendah (1.51 dan 1.43, lawan 2.36). Yang didukung tabel adalah selisih kemiripan struktur: **urutan denoise-dulu memberi SSIM 0.699**, lawan **0.608** dan **0.599** pada kontras-dulu. Karena itulah denoise-dulu dipilih. Penyebab selisih SSIM ini tidak diuji terpisah.
 
 ### Mengapa Bukan CLAHE?
 Contrast Limited Adaptive Histogram Equalization (CLAHE) adalah metode standar untuk penyesuaian kontras lokal. Namun dalam skenario citra CT dengan residu *streak artifacts*:
 - CLAHE memetakan histogram pada blok lokal (*tiles*).
 - Pada area lapang paru yang semestinya datar dan homogen, variasi intensitas kecil akibat residu garis streak diekspansi secara berlebihan menjadi bercak-bercak hipodens/hiperdens palsu (*mottling artifacts*).
-- Studi ablasi membuktikan bahwa CLAHE menghasilkan galat streak terburuk (simpangan baku 16.19) dan penurunan tajam pada nilai SSIM menjadi 0.341.
+- Pada studi ablasi, CLAHE penuh memberi galat streak terburuk (simpangan baku 16.19) dan SSIM terendah (0.341).
 
 ---
 
@@ -163,7 +164,9 @@ Pada skrip `uts.py`, tahap ini diimplementasikan menggunakan fungsi `cv2.fastNlM
 - Ukuran jendela template / patch: $7 \times 7$ (`templateWindowSize=7`)
 - Ukuran jendela pencarian: $21 \times 21$ (`searchWindowSize=21`)
 
-Tahap ini secara selektif meredam fluktuasi butiran kuantum tanpa mengaburkan dinding bronkovaskular.
+Tahap ini meredam fluktuasi butiran kuantum, tetapi ikut meratakan pembuluh kecil berkontras rendah (lihat Bagian 7A).
+
+> **Asal parameter denoise:** $h = 12$, bobot TV $0.05$, dan bobot penajaman $0.5$ dibawa dari uji pendahuluan pada phantom sintetis, **bukan** disetel pada citra riil ini. Saat `--tuning` dijalankan pada citra riil (seed 100–102, 70 kombinasi NLM × TV), setelan ini berada di **peringkat 7 dari 70** (skor 34.21). Peringkat 1 adalah $h = 10$, TV $0.05$ (skor 34.54, PSNR 24.94, SSIM 0.711). Selisihnya kecil, jadi parameter tidak diganti agar konsisten dengan draf awal.
 
 ### Tahap 2: Total Variation Chambolle (TV) Denoising
 Untuk meratakan pola garis-garis *streak* berdensitas rendah yang memotong parenkim paru, diterapkan algoritma Total Variation berbasis formulasi regularisasi Antonin Chambolle:
@@ -211,10 +214,15 @@ Tiap indikator dipilih untuk merepresentasikan aspek diagnostik tertentu:
 5. **Rasio Ketajaman Tepi:** Dihitung dari varians filter Laplacian (dihaluskan Gaussian $\sigma=0.8$ agar tidak membiaskan derau sebagai ketajaman semu).
 6. **Kontras Struktur Pembuluh:** Rasio selisih intensitas struktur vaskular terhadap parenkim sekitarnya.
 
-### Transparansi Ambang Rubrik: Ambang Awal vs Ambang Rekalibrasi Citra Riil
-Pada rancangan awal, sistem evaluasi menggunakan ambang batas yang disetel berdasarkan uji pendahuluan phantom digital sintetis (`RUBRIK_PHANTOM`). Namun, citra klinis riil memiliki tekstur mikroskopis non-uniform dan variasi radiodensitas alami yang menghasilkan korelasi matematis awal lebih rendah dibanding phantom bidang datar sintetis.
+### Transparansi Ambang Rubrik: Ambang Awal vs Ambang Sesudah Hasil
+Ada dua set ambang, dan keduanya ditampilkan:
 
-Oleh karena itu, setelah uji pendahuluan pada citra riil, ditetapkan set ambang kedua (`RUBRIK_REAL_CT`). Tabel berikut membandingkan capaian hasil restorasi (Seed 42) di bawah **kedua set ambang**:
+1. **Ambang awal (`RUBRIK_PHANTOM`)** ditetapkan **sebelum** hasil keluar, saat uji pendahuluan pada phantom sintetis.
+2. **Ambang citra riil (`RUBRIK_REAL_CT`)** ditetapkan **sesudah** hasil citra riil terlihat. Batas IDEAL untuk PSNR, SSIM, dan streak sengaja diletakkan tepat di bawah hasil (24.5 lawan 24.84 dB, 0.68 lawan 0.699, 2.5 lawan 2.36). Batas IDEAL ketajaman diturunkan dari 0.8 ke 0.6, tetapi hasil 0.59 tetap belum mencapainya.
+
+Alasan membuat set kedua: ambang awal PSNR ≥ 28 dB tidak tercapai oleh satu pun konfigurasi yang diuji. PSNR tertinggi di ablasi 24.87 dB, di uji sensitivitas HFE 25.04 dB, dan di grid tuning 25.01 dB. Namun karena set kedua dibuat sesudah melihat hasil, status IDEAL di bawahnya **tidak boleh dibaca sebagai bukti independen**. Status di bawah ambang awal adalah ukuran yang jujur.
+
+Tabel berikut membandingkan hasil restorasi (seed 42) di bawah **kedua set ambang**:
 
 <!-- prettier-ignore -->
 | Metrik Evaluasi | Nilai Terdegradasi | Nilai Hasil Restorasi | Ambang Awal (Phantom) | Status (Phantom) | Ambang Kalibrasi Citra Riil | Status (Citra Riil) |
@@ -227,8 +235,24 @@ Oleh karena itu, setelah uji pendahuluan pada citra riil, ditetapkan set ambang 
 | **Rasio Kontras Pembuluh** | 0.71 | **1.03** | $\ge 0.50 \; / \; \ge 0.80$ | **IDEAL** | $\ge 0.50 \; / \; \ge 0.80$ | **IDEAL** |
 | **Ringkasan Predikat Status** | - | - | - | **IDEAL 2, MIN 2, BELUM 2** | - | **IDEAL 5, MIN 1, BELUM 0** |
 
-> **Analisis Penetapan Ambang:**  
-> Di bawah ambang awal phantom sintetis, metrik PSNR (24.84 dB) dan SSIM (0.699) berstatus BELUM karena nilai acuan awal dioptimalkan untuk citra sintetis tanpa tekstur mikroskopis. Rekalibrasi ambang pada `RUBRIK_REAL_CT` menetapkan batas yang realistis bagi citra CT klinis, di mana peningkatan PSNR (+5.52 dB) dan SSIM (+60.7%) membuktikan efektivitas restorasi yang optimal.
+\*Rasio ketajaman 0.59 berarti tepi hasil masih lebih lunak daripada ground truth. Statusnya MINIMUM di bawah kedua set ambang.
+
+> **Pembacaan yang tepat:** Di bawah ambang awal, PSNR dan SSIM berstatus **BELUM** (SSIM 0.699 hanya 0.001 di bawah batas MINIMUM 0.70). Kenaikan dari citra terdegradasi tetap nyata: PSNR +5.52 dB dan SSIM +60.7%. Tetapi "IDEAL 5 dari 6" hanya berlaku pada ambang yang dibuat sesudah hasil terlihat.
+
+### Konsistensi pada 8 Realisasi Derau (Seed 42–49)
+Anatomi ground truth sama, realisasi derau berbeda. Hasilnya sangat stabil (std PSNR 0.025 dB):
+
+<!-- prettier-ignore -->
+| Metrik | Terdegradasi (rerata) | Hasil (rerata ± std) | Ambang awal: IDEAL / MIN / BELUM | Ambang citra riil: IDEAL / MIN / BELUM |
+| :--- | :---: | :---: | :---: | :---: |
+| PSNR (dB) | 19.33 | 24.86 ± 0.025 | 0 / 0 / **8** | 8 / 0 / 0 |
+| SSIM | 0.435 | 0.699 ± 0.001 | 0 / 1 / **7** | 8 / 0 / 0 |
+| Rasio kontras ROI | 0.571 | 0.993 ± 0.002 | 8 / 0 / 0 | 8 / 0 / 0 |
+| Galat streak paru | 11.12 | 2.34 ± 0.019 | 0 / 8 / 0 | 8 / 0 / 0 |
+| Rasio ketajaman | 0.238 | 0.583 ± 0.003 | 0 / 8 / 0 | 0 / 8 / 0 |
+| Rasio pembuluh (mask global)† | 0.713 | 1.028 ± 0.001 | 8 / 0 / 0 | 8 / 0 / 0 |
+
+†Lihat Bagian 7A: mask ini sebagian besar berisi kontur jantung dan dinding dada, bukan pembuluh paru.
 
 ---
 
@@ -254,9 +278,27 @@ Untuk memverifikasi kontribusi tiap komponen dalam arsitektur restorasi, dilakuk
 | Denoise Saja (NLM > TV tanpa HFE & Sharpen) | 18.91 | 0.408 | 8.77 | 0.56 | 0.06 | 0.72 | 16.54 |
 
 ### Temuan Utama Studi Ablasi:
-1. **Peran Vital HFE:** Menghilangkan HFE membuat PSNR stagnan di 19.48 dB (hanya naik 0.16 dB dari citra terdegradasi), menunjukkan bahwa peredaman derau tanpa restorasi fungsi transfer modulasi frekuensi tidak memadai.
-2. **Perilaku Filter Invers Eksak:** Filter invers analitik $1/H_{\text{deg}}$ mencapai PSNR 24.87 dB (sedikit melampaui HFE 24.84 dB), namun nilai SSIM anjlok ke 0.597 akibat amplifikasi riak frekuensi tinggi di sekitar diskontinuitas batas organ.
-3. **Kegagalan CLAHE:** CLAHE memperparah galat streak hingga mencapai standar deviasi 16.19, membuktikan ketidakcocokannya untuk citra tomografi dengan cacat *sparse-view*.
+1. **Peran HFE:** Tanpa HFE, PSNR hanya 19.48 dB (naik 0.16 dB dari citra terdegradasi). Pada citra ini, denoise saja tidak cukup tanpa koreksi kontras.
+2. **Filter Invers Eksak:** Filter invers analitik $1/H_{\text{deg}}$ memberi PSNR 24.87 dB, sedikit **di atas** pipeline utama (24.84 dB), tetapi SSIM-nya 0.597 lawan 0.699 dan streak 3.20 lawan 2.36. HFE dipilih karena keseimbangan SSIM dan streak, bukan karena PSNR-nya tertinggi.
+3. **CLAHE:** CLAHE penuh menaikkan galat streak ke 16.19 (lebih buruk dari citra terdegradasi 11.09). Pada citra ini CLAHE tidak cocok sebagai pengganti HFE.
+
+### Uji Sensitivitas Parameter HFE
+Degradasi sebenarnya memakai $\sigma = 9$ dan $k$ setara $1.22$. Tahap lain sama dengan pipeline utama (seed 42):
+
+<!-- prettier-ignore -->
+| $\sigma_{\text{HFE}}$ | $k$ | PSNR (dB) | SSIM | Streak | Rasio Kontras |
+| :---: | :---: | :---: | :---: | :---: | :---: |
+| 6 | 0.8 | 23.11 | 0.535 | 3.34 | 0.81 |
+| 6 | 1.2 | 24.60 | 0.575 | 2.32 | 0.93 |
+| 6 | 1.6 | 25.04 | 0.619 | 2.99 | 1.02 |
+| 9 | 0.8 | 23.95 | 0.590 | 2.55 | 0.88 |
+| **9** | **1.2** | **24.84** | **0.699** | **2.36** | **0.99** |
+| 9 | 1.6 | 24.11 | 0.741 | 1.90 | 1.05 |
+| 12 | 0.8 | 23.94 | 0.687 | 3.09 | 0.91 |
+| 12 | 1.2 | 23.83 | 0.765 | 1.31 | 1.00 |
+| 12 | 1.6 | 22.54 | 0.788 | 0.66 | 1.06 |
+
+PSNR berkisar **22.5–25.0 dB** tergantung parameter HFE. Setelan terbaik juga berbeda menurut metrik: PSNR tertinggi pada $\sigma = 6, k = 1.6$, sedangkan SSIM tertinggi dan streak terendah pada $\sigma = 12, k = 1.6$. Setelan utama ($\sigma = 9, k = 1.2$) tidak unggul di semua metrik. Ia dipilih karena **sama dengan parameter degradasi yang diketahui** (*non-blind*). Pada citra PACS sungguhan parameter itu tidak diketahui, jadi angka di atas memperlihatkan seberapa besar hasil bisa bergeser.
 
 ---
 
@@ -284,7 +326,8 @@ Untuk menguji pelestarian vaskular intrapulmonal yang sesungguhnya, dilakukan de
 
 > **Temuan Kritis Trade-off:**  
 > Pipeline utama berhasil menjaga 2 pembuluh cabang yang relatif lebih besar (luas 26-32 px, rasio 0.96), tetapi **menghapus 3 pembuluh mikro** (luas 2-21 px, rasio turun ke 0.01 - 0.16).  
-> Varian *denoise lemah* ($h=6, \text{TV}=0.02$) mampu melestarikan median kontras pembuluh kecil hingga 0.82 (3 dari 5 pembuluh lolos $\ge 0.50$), namun menyisakan galat streak paru lebih tinggi dan menurunkan PSNR ke 22.50 dB. Hal ini menegaskan adanya **trade-off tak terelakkan (*fundamental trade-off*)** antara eliminasi streak vs preservasi struktur vaskular mikro.
+> Varian *denoise lemah* ($h=6, \text{TV}=0.02$) menjaga median kontras pembuluh kecil di 0.82 (3 dari 5 pembuluh $\ge 0.50$, rerata seed 42–45). Konsekuensinya, streak paru naik ke 2.63 dan PSNR turun ke 22.50 dB. Pada citra ini, pengurangan streak dan pelestarian pembuluh kecil saling bertukar (*trade-off*).  
+> Sampelnya hanya 5 pembuluh pada satu irisan, jadi temuan ini adalah **indikasi**, bukan kesimpulan umum.
 
 ### B. Sebaran Galat Regional
 Klaim restorasi tidak boleh digeneralisasi ke seluruh kanvas citra karena metrik streak hanya diukur di parenkim paru datar. Pengukuran galat RMS terhadap ground truth pada berbagai wilayah anatomi menunjukkan:
@@ -344,7 +387,9 @@ Profil kurva respons degradasi $H_{\text{deg}}(\nu)$, kurva penapis $H_{\text{HF
 ![Respons Filter Frekuensi](./respons_frekuensi.png)
 
 ### 9. Analisis Trade-off Denoise: Streak vs Struktur Vaskular
-Visualisasi sebaran 70 kombinasi parameter NLM dan TV. Sumbu X merepresentasikan penurunan galat streak (makin ke kanan makin bersih), sedangkan sumbu Y merepresentasikan preservasi pembuluh darah. Sebanyak 58 dari 70 setelan memenuhi kriteria MINIMUM pada rubrik citra riil:
+Sebaran 70 kombinasi parameter NLM dan TV. Sumbu X adalah galat streak paru (makin ke kanan makin bersih), sumbu Y adalah rasio kontras `mask_pembuluh` global.
+
+> **Catatan:** Grafik ini **tidak** mengukur pembuluh paru kecil. Seperti dijelaskan di Bagian 7A, mask tersebut sebagian besar berisi kontur jantung dan dinding dada, sehingga semua 70 setelan bernilai 0.98–1.03. Angka "58 dari 70 setelan lolos MINIMUM untuk streak dan pembuluh" karena itu praktis hanya mencerminkan syarat streak. Trade-off pembuluh yang sebenarnya ada di tabel 5 pembuluh kecil (Bagian 7A).
 
 ![Trade-off Denoise](./tradeoff_denoise.png)
 
@@ -353,17 +398,22 @@ Visualisasi sebaran 70 kombinasi parameter NLM dan TV. Sumbu X merepresentasikan
 ## 9. Keterbatasan & Kesimpulan
 
 ### Keterbatasan Studi
-1. **Validasi Komputasional Tunggal:** Pengujian dilakukan pada satu irisan CT klinis normal beresolusi $256 \times 256$ piksel tanpa penilaian ganda oleh dokter spesialis radiologi, sehingga hasil tidak boleh diklaim siap untuk diagnosis klinis definitif.
-2. **Restorasi Non-Blind:** Filter HFE bergantung pada estimasi parameter pelemahan kontras lokal yang mendekati nilai degradasi riil.
-3. **Pelemahan Pembuluh Mikro:** Filter NLM dan TV meratakan variasi intensitas rendah di parenkim paru, mengorbankan pembuluh darah halus berdiameter 1-2 piksel.
-4. **Residu Galat di Luar Paru:** Peredaman streak sangat dominan di parenkim paru (RMS 3.13), namun residu galat pada jaringan lunak mediastinum (RMS 11.01) dan meja pemindai (RMS 22.68) masih ada.
+1. **Satu irisan, satu pipeline, tanpa radiolog:** Pengujian memakai satu irisan CT normal dari satu kasus Radiopaedia, didegradasi secara simulasi. Belum ada penilaian dokter spesialis radiologi, jadi hasil tidak boleh diklaim siap untuk diagnosis klinis.
+2. **Resolusi diturunkan:** Citra sumber $1524 \times 1524$ diperkecil ke $256 \times 256$ (faktor 5.95). Detail halus yang hilang saat pengecilan tidak ikut dievaluasi.
+3. **Restorasi non-blind:** HFE memakai $\sigma$ dan $k$ yang sama dengan parameter degradasi yang diketahui. Bila parameter HFE bergeser, PSNR berkisar 22.5–25.0 dB (Bagian 6). Pada citra bersih (kontrol negatif), pipeline menurunkan PSNR ke 19.47 dB dan menaikkan rasio ketajaman ke 2.27.
+4. **Pembuluh kecil hilang:** NLM dan TV meratakan pembuluh kecil berkontras rendah. Pada uji 5 pembuluh, 3 yang terkecil (luas 2–21 piksel) turun ke rasio kontras 0.01–0.16. Metrik `pembuluh` di rubrik tidak menangkap hal ini karena mask-nya didominasi kontur jantung dan dinding dada.
+5. **Metrik streak hanya mengukur paru:** RMS galat paru turun ke 3.13, tetapi jaringan lunak datar masih 11.01, tepi luar badan 20.17, dan latar meja 22.68 (bias +17.17).
+6. **Overshoot tidak terukur:** Semua tahap di-clip ke $[0, 255]$ dan 1.56% piksel ground truth sudah bernilai 255. Karena itu laporan "0 piksel di atas maksimum GT" tidak berarti bebas overshoot.
+7. **Parameter dan ambang:** Parameter denoise dibawa dari phantom (peringkat 7 dari 70 pada citra riil). Ambang `RUBRIK_REAL_CT` ditetapkan sesudah hasil terlihat. Di bawah ambang awal, PSNR dan SSIM berstatus BELUM.
 
 ### Kesimpulan
-Integrasi metode domain spasial (NLM dan TV Chambolle) dengan penapisan domain frekuensi Fourier 2D (HFE) terbukti efektif merekonstruksi citra CT Thorax terdegradasi parah di domain citra. Rekonstruksi ini menghasilkan peningkatan kualitas objektif yang signifikan:
-- **PSNR meningkat dari 19.32 dB ke 24.84 dB (+5.52 dB)**.
-- **SSIM meningkat dari 0.435 ke 0.699 (+60.7%)**.
-- **Galat streak di lapang paru tereduksi sebesar 78.7%**.
-- **Rasio kontras lokal ROI pulih presisi di angka 0.99**.
+Pada satu irisan CT Thorax yang didegradasi secara simulasi, pipeline NLM → TV → HFE → penajaman Laplacian memberi perbaikan terukur, stabil di 8 realisasi derau:
+- **PSNR naik dari 19.32 dB ke 24.84 dB (+5.52 dB)**.
+- **SSIM naik dari 0.435 ke 0.699 (+60.7%)**.
+- **Galat streak di parenkim paru turun 78.7%** (11.09 → 2.36).
+- **Rasio kontras lokal ROI menjadi 0.99** (dari 0.57).
+
+Perbaikan ini punya batas yang jelas. Di bawah ambang yang ditetapkan sebelum hasil, PSNR dan SSIM belum mencapai MINIMUM. Pembuluh paru kecil ikut teredam, dan denoise yang lebih lemah menjaganya dengan mengorbankan PSNR (22.50 dB). Galat di luar paru masih besar. Selain itu, koreksi kontras bergantung pada parameter degradasi yang diketahui. Langkah berikutnya yang paling bernilai adalah menguji lebih banyak irisan dan kasus, menilai pembuluh kecil dengan mask yang tepat, dan mengestimasi parameter HFE dari citra itu sendiri (*blind*).
 
 ---
 
@@ -381,8 +431,11 @@ hanya menerima CITRA hasil rekonstruksi (RS rujukan tidak menyimpan data sinogra
 jadi seluruh tahap restorasi bekerja di domain citra.
 
 Pembuatan sampel degradasi (poin 1 soal: "pilih atau buat sampel")
-  1. Citra CT Thorax klinis riil (src/normal-ct-chest.jpeg) dipakai sebagai ground truth f
-     (dengan fallback otomatis ke phantom digital thorax bila berkas tidak ditemukan).
+  1. Citra CT Thorax klinis riil (src/normal-ct-chest.jpeg) dipakai sebagai ground truth f.
+     Sumber: Dixon A. Normal CT chest. Radiopaedia.org, rID 36676,
+     https://radiopaedia.org/cases/normal-ct-chest (CC BY-NC-SA 3.0).
+     Bila berkas tidak ditemukan, skrip mencetak peringatan lalu memakai phantom digital
+     thorax. Angka di artikel hanya berlaku untuk citra riil.
   2. Forward projection (Radon) pada sudut JARANG (40 sudut, protokol dosis rendah).
   3. Noise Poisson (pencacahan foton) + Gaussian (elektronik) ditambahkan pada domain
      SINOGRAM, sesuai fisika akuisisi. Rekonstruksi filtered back-projection (FBP) lalu
@@ -411,11 +464,12 @@ area datar. Studi ablasi di bawah (jalankan skrip) memperlihatkan angkanya.
 
 Rubrik dua tingkat (poin 2 soal): MINIMUM (layak) dan IDEAL (unggul) per metrik.
 Terdapat dua set ambang:
-  1. RUBRIK_PHANTOM: Ditetapkan pada uji pendahuluan phantom sintetis piecewise-constant.
-     Jika diterapkan pada citra riil, PSNR dan SSIM berstatus BELUM karena citra riil memiliki
-     tekstur alami dan korelasi matematis awal yang lebih rendah.
-  2. RUBRIK_REAL_CT: Ambang adaptif yang disesuaikan setelah uji pendahuluan citra riil
-     (PSNR >= 22.0 / 24.5 dB, SSIM >= 0.60 / 0.68, Streak <= 4.0 / 2.5).
+  1. RUBRIK_PHANTOM: ambang awal, ditetapkan sebelum hasil keluar, pada uji pendahuluan
+     phantom sintetis. Pada citra riil (seed 42): IDEAL 2, MINIMUM 2, BELUM 2 (PSNR, SSIM).
+  2. RUBRIK_REAL_CT: ditetapkan SESUDAH hasil citra riil terlihat. PSNR, SSIM, streak, dan
+     ketajaman IDEAL dilonggarkan sampai tepat di bawah hasil (24.5 vs 24.84, 0.68 vs 0.699,
+     2.5 vs 2.36). Status di bawah ambang ini tidak boleh dibaca sebagai bukti independen.
+     Artikel menampilkan status di bawah kedua set.
 
 Keterbatasan yang harus disebut di artikel
   * Validasi komputasional pada satu citra klinis terdegradasi secara simulasi. Belum ada
@@ -429,13 +483,19 @@ Keterbatasan yang harus disebut di artikel
   * Metrik streak hanya mengukur parenkim paru datar (RMS 3.13). Galat di jaringan lunak datar
     (RMS 11.01), tepi luar tubuh (RMS 20.17), dan meja pasien (RMS 22.68) masih tersisa.
   * Citra klinis asli 1524x1524 diperkecil ke 256x256 untuk pemodelan Radon FBP komputasional.
+  * Semua tahap di-clip ke [0, 255] dan 1.56% piksel ground truth sudah 255, jadi overshoot
+    di atas 255 tidak terukur (artefak.txt selalu melaporkan 0 piksel).
+  * Parameter NLM, TV, dan penajaman dibawa dari phantom, bukan disetel pada citra ini.
+    Pada citra riil, --tuning menaruhnya di peringkat 7 dari 70.
 
-Pemakaian
-  uv run python restorasi_ct_thorax.py            (laporan lengkap)
-  uv run python restorasi_ct_thorax.py --tuning   (grid parameter NLM, TV, penajaman)
+Pemakaian (dari folder proyek, citra di src/normal-ct-chest.jpeg)
+  pip install opencv-python numpy scipy scikit-image matplotlib
+  python src/uts.py                 (laporan lengkap)
+  python src/uts.py path/citra.jpg  (citra lain)
+  python src/uts.py --tuning        (grid parameter NLM, TV)
 
 Keluaran (folder tasks/hasil)
-  ground_truth.png, citra_terdegradasi.png, hasil_restorasi.png,
+  ground_truth.png, citra_terdegradasi.png, hasil_restorasi.png, komparasi_before_after.png,
   pembuatan_sampel_degradasi.png, komparasi_gt_degradasi_hasil.png, tabel_metrik_rubrik.png,
   tabel_ablasi.png, tahapan_proses.png, respons_frekuensi.png, tradeoff_denoise.png,
   ablasi.txt, ringkasan_batch.txt, artefak.txt, tradeoff_denoise.txt, spesifikasi_input.txt
@@ -457,17 +517,16 @@ from skimage.transform import iradon, radon
 # ----------------------------------------------------------------------
 SEED = 42  # reproduksibilitas. Batch evaluasi memakai seed 42 sampai 42 + N_BATCH - 1
 SEEDS_TUNING = (100, 101, 102)  # realisasi noise untuk menyetel parameter, terpisah dari seed evaluasi
-UKURAN = 256  # sisi kanvas phantom (persegi)
+UKURAN = 256  # sisi kanvas citra kerja (persegi), citra sumber diperkecil ke ukuran ini
 N_BATCH = 8  # jumlah realisasi noise untuk ringkasan batch
 
 # Pembuatan sampel degradasi (spesifikasi input, poin 1 soal)
 N_SUDUT_JARANG = 40  # sudut proyeksi sparse-view pada 0-180 derajat
 DOSIS_FOTON = 5.0  # skala pencacahan foton. Makin kecil, makin dominan noise Poisson
 SIGMA_ELEKTRONIK = 50.0  # std noise Gaussian elektronik pada domain sinogram
-# Hasil kalibrasi: pada rekonstruksi FBP 40 sudut, dosis 5 memberi std noise sekitar 3.9 tingkat abu
-# di parenkim paru dan sigma_e 50 memberi sekitar 4.9. Gabungan sekitar 6.3 (SNR sekitar 6 terhadap
-# step paru-jaringan 40). Nilai awal (dosis 450, sigma 3.5) hanya menghasilkan noise sekitar 0.5,
-# jadi noise praktis tidak ada dan tidak layak disebut degradasi.
+# Dosis dan sigma_e dikalibrasi awalnya pada phantom. Pada citra riil (seed 42, lihat
+# spesifikasi_input.txt), noise murni di paru: std 7.15 tingkat abu (Poisson saja 5.20,
+# Gaussian saja 4.95). Galat FBP tanpa noise (streak sparse-view dan blur) di paru: std 17.01.
 ALPHA_KONTRAS = 0.45  # 1.0 = kontras asli. Makin kecil, kontras lokal makin rendah
 SIGMA_KONTRAS_LOKAL = 9.0  # radius gaussian (piksel) untuk rata-rata lokal
 
@@ -1256,22 +1315,24 @@ if __name__ == "__main__":
 
 ## 11. Panduan Menjalankan Program
 
+### Menyiapkan Citra
+Unduh satu irisan aksial dari kasus [Normal CT chest (Radiopaedia, rID 36676)](https://radiopaedia.org/cases/normal-ct-chest), lalu simpan sebagai `src/normal-ct-chest.jpeg`. Jika berkas tidak ditemukan, skrip mencetak `[PERINGATAN]` dan memakai phantom sintetis. Dalam kondisi itu angka di artikel ini tidak berlaku.
+
 ### Dependensi Python
-Pasang dependensi yang diperlukan melalui pip:
 ```bash
 pip install opencv-python numpy scipy scikit-image matplotlib
 ```
 
 ### Eksekusi Program
 ```bash
-# 1. Jalankan restorasi dan buat seluruh laporan visual (folder tasks/hasil)
+# 1. Restorasi lengkap, semua gambar dan laporan .txt (folder tasks/hasil)
 python src/uts.py
 
-# 2. Mengoper berkas citra klinis kustom secara langsung:
-python src/uts.py normal-ct-chest.jpeg
+# 2. Memakai berkas citra lain
+python src/uts.py path/ke/citra.jpeg
 
-# 3. Jalankan grid search tuning parameter NLM dan TV:
+# 3. Grid tuning 70 kombinasi NLM x TV (seed 100-102)
 python src/uts.py --tuning
 ```
 
-Seluruh berkas gambar (`.png`) dan laporan kuantitatif (`.txt`) akan otomatis tersimpan di folder `tasks/hasil/`.
+Semua gambar di artikel ini, termasuk `komparasi_before_after.png`, dihasilkan oleh perintah nomor 1 ke folder `tasks/hasil/`. Pengecualiannya `bukti_pembuluh.png` serta angka pembuluh kecil dan galat per wilayah di Bagian 7, yang berasal dari skrip uji reviewer (`uji_review_citra_riil.py`).
